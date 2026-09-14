@@ -8,9 +8,14 @@ env/
 # Jupyter
 .ipynb_checkpoints/
 
-# Machine Learning
+# Machine Learning & Data
 *.pkl
 *.joblib
+*.csv
+ml/data/
+*.db
+*.sqlite
+database/*.db
 
 # Node / React
 node_modules/

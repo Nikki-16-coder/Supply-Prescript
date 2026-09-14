@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SupplyPrescript | Closed-Loop Prescriptive Analytics for Supply Chain</title>
+  <meta name="description" content="Closed-Loop Prescriptive Analytics for Microchip Supply Chain Decision Support. Combines XGBoost delay prediction with PuLP linear programming optimization.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="brand-wrapper">
+      <div class="brand-icon">⚡</div>
+      <div class="brand-info">
+        <h1>SUPPLYPRESCRIPT</h1>
+        <div class="brand-subtitle">Closed-Loop Prescriptive Analytics for Microchip Supply Chain</div>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <span class="tag-badge">BCA Data Science Capstone</span>
+      <div id="backendStatusBadge" class="status-badge">
+        <span class="status-dot"></span>
+        <span id="backendStatusText">Connecting...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Business Context Flow Banner -->
+  <section class="scenario-banner">
+    <div class="scenario-title-area">
+      <div class="scenario-icon">🏭</div>
+      <div class="scenario-text">
+        <strong>Domain Application Scenario: Microchip Supply Chain</strong>
+        <p>Logistics delay risk inferred via XGBoost (DataCo dataset) &bull; Prescriptive mitigation solved via PuLP</p>
+      </div>
+    </div>
+    <div class="scenario-chain">
+      <div class="chain-node supplier">🏢 Supplier (Microchip Fab)</div>
+      <div class="chain-arrow">➔</div>
+      <div class="chain-node cargo">📦 Transit &amp; Delay Risk</div>
+      <div class="chain-arrow">➔</div>
+      <div class="chain-node manufacturer">⚙️ Manufacturer (Assembly Line)</div>
+    </div>
+  </section>
+
+  <!-- Main Workspace -->
+  <main class="main-container">
+    
+    <!-- Tab Navigation -->
+    <nav class="tabs-nav" aria-label="Dashboard Views">
+      <button class="tab-btn active" data-tab="tab-console" id="tabConsoleBtn">
+        <span>🎮</span> Closed-Loop Decision Console
+      </button>
+      <button class="tab-btn" data-tab="tab-audit" id="tabAuditBtn">
+        <span>🗄️</span> SQLite Audit Trail &amp; KPIs
+      </button>
+      <button class="tab-btn" data-tab="tab-ml" id="tabMlBtn">
+        <span>🧠</span> ML Model Performance
+      </button>
+    </nav>
+
+    <!-- ======================================================================
+         TAB 1: CLOSED-LOOP DECISION CONSOLE
+         ====================================================================== -->
+    <div id="tab-console" class="tab-content">
+      <div class="dashboard-grid">
+        
+        <!-- Left Column: Input Controls & Presets -->
+        <div class="col-inputs">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon">⚙️</span>
+                <h2 class="card-title">Shipment &amp; Disruption Parameters</h2>
+              </div>
+              <span class="card-badge cyan">Input Layer</span>
+            </div>
+
+            <!-- Preset Scenarios -->
+            <div class="form-group">
+              <label class="form-label">Load Quick Scenario Preset:</label>
+              <div class="preset-bar">
+                <button type="button" class="preset-chip" id="presetStandard">Standard Disruption (7d SLA)</button>
+                <button type="button" class="preset-chip" id="presetCritical">Critical Production Halt (3d SLA)</button>
+                <button type="button" class="preset-chip" id="presetBudget">Tight Budget ($10k)</button>
+                <button type="button" class="preset-chip" id="presetInfeasible">Over-Capacity Test</button>
+              </div>
+            </div>
+
+            <form id="prescriptionForm">
+              <!-- Microchip Business Constraints -->
+              <div class="section-label">💎 Microchip Business Constraints (PuLP Optimization)</div>
+              
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="shipmentId">Shipment Tracking ID</label>
+                  <input type="text" id="shipmentId" class="form-input" value="CHIP-TSMC-8840" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="componentName">Component Type</label>
+                  <input type="text" id="componentName" class="form-input" value="4nm AI Accelerators" required>
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="requiredQuantity">Required Quantity (Units)</label>
+                  <input type="number" id="requiredQuantity" class="form-input" value="5000" min="1" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="supplierCapacity">Supplier Capacity (Units)</label>
+                  <input type="number" id="supplierCapacity" class="form-input" value="6000" min="1" required>
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="budgetInput">Mitigation Budget ($ USD)</label>
+                  <input type="number" id="budgetInput" class="form-input" value="20000" min="0" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="maxDeliveryDays">Max Delivery Days (SLA Deadline)</label>
+                  <input type="number" id="maxDeliveryDays" class="form-input" value="7" min="1" required>
+                </div>
+              </div>
+
+              <!-- Logistics Profile (DataCo Features for ML) -->
+              <div class="section-label">🚚 Logistics Profile (DataCo ML Features)</div>
+              
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="shippingMode">Shipping Mode</label>
+                  <select id="shippingMode" class="form-select">
+                    <option value="Second Class" selected>Second Class (High Disruption Risk)</option>
+                    <option value="First Class">First Class (Critical Schedule)</option>
+                    <option value="Standard Class">Standard Class (Normal Route)</option>
+                    <option value="Same Day">Same Day (Priority Courier)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="scheduledDays">Scheduled Transit Days</label>
+                  <input type="number" id="scheduledDays" class="form-input" value="2" min="0" max="10" required>
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="simulatedDelay">Simulated Disruption Duration (Days)</label>
+                  <input type="number" id="simulatedDelay" class="form-input" value="14" min="0" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="orderRegion">Origin Region</label>
+                  <input type="text" id="orderRegion" class="form-input" value="Southeast Asia">
+                </div>
+              </div>
+
+              <div class="btn-group">
+                <button type="button" class="btn btn-secondary" id="btnRunPrediction">
+                  <span>🔍</span> Run ML Delay Prediction
+                </button>
+                <button type="submit" class="btn btn-primary" id="btnRunPrescription">
+                  <span>⚡</span> Execute Prescriptive Optimization
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Right Column: Intelligence & Prescriptive Solution -->
+        <div class="col-results">
+          
+          <!-- Step 2: ML Prediction Result -->
+          <div class="card" id="predictionCard">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon">🧠</span>
+                <h3 class="card-title">ML Delay Risk Intelligence</h3>
+              </div>
+              <span class="card-badge amber" id="mlStatusBadge">Awaiting Run</span>
+            </div>
+
+            <div class="risk-meter-wrapper">
+              <div class="risk-header">
+                <div>
+                  <div class="risk-label" id="riskLevelLabel">Delay Risk Level</div>
+                  <div class="risk-score" id="riskScoreText">--%</div>
+                </div>
+                <div style="text-align: right;">
+                  <div class="risk-label">Predicted Delay</div>
+                  <div style="font-size: 1.5rem; font-weight: 800; color: #fff;" id="predictedDelayText">-- Days</div>
+                </div>
+              </div>
+              <div class="meter-track">
+                <div class="meter-fill" id="meterFill" style="width: 0%;"></div>
+              </div>
+              <div class="risk-meta-grid">
+                <div class="meta-item">
+                  <strong id="metaModelName">XGBoost Classifier</strong>
+                  <span>Historical Logistics Trained (DataCo)</span>
+                </div>
+                <div class="meta-item">
+                  <strong id="metaStatus">Ready</strong>
+                  <span>Zero Data Leakage Guaranteed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Prescriptive Optimization Result -->
+          <div class="card" id="optimizationCard">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon">🎯</span>
+                <h3 class="card-title">Prescriptive Mitigation Alternatives</h3>
+              </div>
+              <span class="card-badge emerald" id="optStatusBadge">Awaiting Optimization</span>
+            </div>
+
+            <!-- Recommended Action Hero Banner -->
+            <div class="recommendation-banner" id="recommendationBanner">
+              <div class="recommendation-info">
+                <h4>Optimal PuLP Recommendation</h4>
+                <div class="recommendation-action" id="recommendedActionName">Run Optimization</div>
+                <p id="recommendationStatusMsg" style="font-size: 0.8rem; color: #cbd5e1; margin-top: 0.25rem;">
+                  Click 'Execute Prescriptive Optimization' to solve linear program.
+                </p>
+              </div>
+              <div class="recommendation-stats">
+                <div class="rec-stat-cost" id="recCostValue">$0</div>
+                <div class="rec-stat-days" id="recDaysValue">-- Days</div>
+              </div>
+            </div>
+
+            <!-- Alternatives Trade-Off Table -->
+            <table class="options-table">
+              <thead>
+                <tr>
+                  <th>Alternative Option</th>
+                  <th>Cost ($)</th>
+                  <th>Delivery (Days)</th>
+                  <th>SLA Constraint</th>
+                  <th>Budget Constraint</th>
+                </tr>
+              </thead>
+              <tbody id="optionsTableBody">
+                <tr>
+                  <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                    No optimization run yet.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Step 4: Manager Decision Recording -->
+            <div class="closed-loop-box" id="managerDecisionBox">
+              <div class="section-label">✍️ Closed-Loop Step 4: Manager Decision Approval</div>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                Select the final decision to write back into the SQLite audit database:
+              </p>
+              
+              <div class="radio-pill-group" id="decisionPillGroup">
+                <!-- Dynamically populated options -->
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="managerNotes">Manager Rationale / Notes</label>
+                <input type="text" id="managerNotes" class="form-input" placeholder="e.g. Approved Air Freight to meet fab production schedule.">
+              </div>
+
+              <button type="button" class="btn btn-success" id="btnRecordDecision">
+                <span>💾</span> Confirm &amp; Record Decision to Database
+              </button>
+            </div>
+
+            <!-- Step 5: Post-Shipment Outcome Tracking -->
+            <div class="closed-loop-box" id="outcomeTrackingBox" style="margin-top: 1.25rem;">
+              <div class="section-label">📊 Closed-Loop Step 5: Post-Delivery Outcome Evaluation</div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="actualDays">Actual Delivery Days</label>
+                  <input type="number" id="actualDays" class="form-input" value="2" min="1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="actualCost">Actual Incurred Cost ($)</label>
+                  <input type="number" id="actualCost" class="form-input" value="15000" min="0">
+                </div>
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="decisionEffective">Was Decision Effective?</label>
+                  <select id="decisionEffective" class="form-select">
+                    <option value="1">Yes (Assembly Line Kept Running)</option>
+                    <option value="0">No (Production Stoppage / Excess Cost)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="feedbackNotes">Outcome Feedback</label>
+                  <input type="text" id="feedbackNotes" class="form-input" value="Zero assembly downtime. Decision satisfied SLA.">
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary" id="btnRecordOutcome">
+                <span>📝</span> Record Outcome &amp; Complete Closed Loop
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         TAB 2: SQLITE AUDIT TRAIL & KPIS
+         ====================================================================== -->
+    <div id="tab-audit" class="tab-content hidden">
+      
+      <!-- KPI Metric Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon">📦</div>
+          <div>
+            <div class="kpi-value" id="kpiTotalShipments">0</div>
+            <div class="kpi-title">Shipments Tracked</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">⚠️</div>
+          <div>
+            <div class="kpi-value" id="kpiAvgRisk">0%</div>
+            <div class="kpi-title">Avg Delay Probability</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🎯</div>
+          <div>
+            <div class="kpi-value" id="kpiOptimalCount">0</div>
+            <div class="kpi-title">Optimal Solutions Solved</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">✅</div>
+          <div>
+            <div class="kpi-value" id="kpiEffectiveness">100%</div>
+            <div class="kpi-title">Decision Effectiveness</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Database Records -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-icon">🗃️</span>
+            <h3 class="card-title">Recent Prescriptive Decisions (SQLite Write-Back)</h3>
+          </div>
+          <button type="button" class="btn btn-secondary" id="btnRefreshAudit" style="padding: 0.4rem 0.9rem; font-size: 0.8rem;">
+            <span>🔄</span> Refresh Database Records
+          </button>
+        </div>
+
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Shipment ID</th>
+                <th>Required Qty</th>
+                <th>Budget</th>
+                <th>SLA Days</th>
+                <th>PuLP Recommended</th>
+                <th>Manager Decision</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="decisionsTableBody">
+              <tr>
+                <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                  Loading SQLite records...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Outcomes Evaluation Table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-icon">📈</span>
+            <h3 class="card-title">Closed-Loop Outcome Performance Evaluations</h3>
+          </div>
+        </div>
+
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Shipment ID</th>
+                <th>Actual Days</th>
+                <th>Actual Cost ($)</th>
+                <th>Delay Occurred</th>
+                <th>Effective?</th>
+                <th>Feedback Notes</th>
+                <th>Recorded At</th>
+              </tr>
+            </thead>
+            <tbody id="outcomesTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                  No outcomes logged yet.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ======================================================================
+         TAB 3: ML MODEL PERFORMANCE
+         ====================================================================== -->
+    <div id="tab-ml" class="tab-content hidden">
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-icon">📊</span>
+              <h3 class="card-title">XGBoost Delay Classifier Metrics</h3>
+            </div>
+            <span class="card-badge cyan">Evaluation Metrics</span>
+          </div>
+
+          <div class="risk-meta-grid" style="grid-template-columns: repeat(2, 1fr); margin-top: 0;">
+            <div class="meta-item">
+              <strong id="mlMetricAcc">69.80%</strong>
+              <span>Overall Accuracy</span>
+            </div>
+            <div class="meta-item">
+              <strong id="mlMetricPrec">84.31%</strong>
+              <span>Delay Precision (Late Risk = 1)</span>
+            </div>
+            <div class="meta-item">
+              <strong id="mlMetricF1">0.6670</strong>
+              <span>F1 Score</span>
+            </div>
+            <div class="meta-item">
+              <strong id="mlMetricAuc">0.7370</strong>
+              <span>ROC-AUC Score</span>
+            </div>
+          </div>
+
+          <div class="section-label" style="margin-top: 1.5rem;">Confusion Matrix (Test Set: 36,104 Samples)</div>
+          <table class="options-table">
+            <thead>
+              <tr>
+                <th>True \ Predicted</th>
+                <th>Predicted On-Time (0)</th>
+                <th>Predicted Delayed (1)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Actual On-Time (0)</strong></td>
+                <td style="color: var(--emerald);">14,276 (True Negative)</td>
+                <td style="color: var(--rose);">2,032 (False Positive)</td>
+              </tr>
+              <tr>
+                <td><strong>Actual Delayed (1)</strong></td>
+                <td style="color: var(--rose);">8,873 (False Negative)</td>
+                <td style="color: var(--cyan);">10,923 (True Positive)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-icon">🛡️</span>
+              <h3 class="card-title">Data Leakage &amp; Domain Separation</h3>
+            </div>
+          </div>
+          
+          <div style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
+            <p style="margin-bottom: 0.75rem;">
+              <strong style="color: #fff;">Dataset Integrity:</strong> We utilize the DataCo Supply Chain dataset (180,519 rows) strictly as historical logistics training data for delay probability estimation. It is not labeled as microchip data.
+            </p>
+            <p style="margin-bottom: 0.75rem;">
+              <strong style="color: #fff;">Data Leakage Prevention:</strong> The following post-transit attributes are strictly prohibited from model features:
+            </p>
+            <ul style="margin-left: 1.5rem; margin-bottom: 1rem; color: var(--rose);">
+              <li><code>Days for shipping (real)</code></li>
+              <li><code>Delivery Status</code></li>
+              <li><code>shipping date (DateOrders)</code></li>
+            </ul>
+            <p>
+              <strong style="color: #fff;">Prescriptive Decoupling:</strong> The microchip supply chain parameters (4nm chips, wafer fab capacity, assembly line budget, SLA delivery deadline) form the operational business layer fed into PuLP MILP optimization.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

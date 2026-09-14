@@ -1,0 +1,20 @@
+{
+  "model": "XGBoost Classifier",
+  "accuracy": 0.698,
+  "precision": 0.8431,
+  "recall": 0.5518,
+  "f1_score": 0.667,
+  "roc_auc": 0.737,
+  "confusion_matrix": [
+    [
+      14276,
+      2032
+    ],
+    [
+      8873,
+      10923
+    ]
+  ],
+  "regression_mae": 0.4772,
+  "regression_rmse": 0.6632
+}
