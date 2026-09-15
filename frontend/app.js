@@ -29,7 +29,7 @@ async function initHealthCheck() {
       badge.style.background = 'rgba(16, 185, 129, 0.15)';
       badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
       badge.style.color = '#10b981';
-      text.textContent = 'Backend Live (FastAPI)';
+      text.textContent = 'Operational (FastAPI Engine Live)';
     } else {
       throw new Error(`HTTP ${res.status}`);
     }
@@ -140,7 +140,7 @@ function initPresetButtons() {
         document.getElementById('simulatedDelay').value = data.simulatedDelay;
         document.getElementById('orderRegion').value = data.region;
 
-        showToast(`Loaded preset: ${btn.textContent}`, 'success');
+        showToast(`Configured scenario: ${btn.textContent}`, 'success');
       });
     }
   });
@@ -179,7 +179,7 @@ function initFormHandlers() {
     btnPredict.addEventListener('click', async () => {
       const payload = getFormData();
       btnPredict.disabled = true;
-      btnPredict.innerHTML = '<span>⏳</span> Analyzing Risk...';
+      btnPredict.innerHTML = '<span>⏳</span> Evaluating Risk...';
       try {
         const res = await fetch(`${API_BASE}/predict`, {
           method: 'POST',
@@ -189,12 +189,12 @@ function initFormHandlers() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         renderPrediction(data);
-        showToast(`ML Prediction complete for ${data.shipment_id}`, 'success');
+        showToast(`Disruption risk evaluated for consignment ${data.shipment_id}`, 'success');
       } catch (err) {
         showToast(`Prediction failed: ${err.message}`, 'error');
       } finally {
         btnPredict.disabled = false;
-        btnPredict.innerHTML = '<span>🔍</span> Run ML Delay Prediction';
+        btnPredict.innerHTML = '<span>🔍</span> Evaluate Delay Probability (ML)';
       }
     });
   }
@@ -207,7 +207,7 @@ function initFormHandlers() {
       const payload = getFormData();
       const btnSubmit = document.getElementById('btnRunPrescription');
       btnSubmit.disabled = true;
-      btnSubmit.innerHTML = '<span>⏳</span> Solving PuLP LP...';
+      btnSubmit.innerHTML = '<span>⏳</span> Solving PuLP MILP...';
       try {
         const res = await fetch(`${API_BASE}/prescribe`, {
           method: 'POST',
@@ -218,12 +218,12 @@ function initFormHandlers() {
         const data = await res.json();
         currentPrescription = data;
         renderPrescription(data, payload);
-        showToast(`Prescriptive Optimization solved! Action: ${data.optimization.recommended_action || 'Infeasible'}`, 'success');
+        showToast(`Prescriptive mitigation synthesized: ${data.optimization.recommended_action || 'Infeasible'}`, 'success');
       } catch (err) {
         showToast(`Optimization failed: ${err.message}`, 'error');
       } finally {
         btnSubmit.disabled = false;
-        btnSubmit.innerHTML = '<span>⚡</span> Execute Prescriptive Optimization';
+        btnSubmit.innerHTML = '<span>⚡</span> Solve Prescriptive Mitigation (PuLP)';
       }
     });
   }
@@ -235,7 +235,7 @@ function initFormHandlers() {
       const shipmentId = document.getElementById('shipmentId').value.trim();
       const selectedRadio = document.querySelector('input[name="manager_choice"]:checked');
       if (!selectedRadio) {
-        showToast('Please select a decision action first.', 'error');
+        showToast('Please select an authorized mitigation action first.', 'error');
         return;
       }
       const managerDecision = selectedRadio.value;
@@ -323,19 +323,19 @@ function renderPrediction(data) {
   if (prob >= 0.6) {
     scoreText.classList.add('high');
     meterFill.classList.add('high');
-    levelLabel.textContent = 'HIGH DELAY RISK';
+    levelLabel.textContent = 'HIGH DISRUPTION RISK';
     badge.textContent = 'High Delay Risk';
     badge.className = 'card-badge amber';
   } else if (prob >= 0.4) {
     scoreText.classList.add('medium');
     meterFill.classList.add('medium');
-    levelLabel.textContent = 'MODERATE RISK';
+    levelLabel.textContent = 'MODERATE DISRUPTION RISK';
     badge.textContent = 'Moderate Risk';
     badge.className = 'card-badge cyan';
   } else {
     scoreText.classList.add('low');
     meterFill.classList.add('low');
-    levelLabel.textContent = 'ON-TIME PROBABLE';
+    levelLabel.textContent = 'ON-TIME DISPATCH PROBABLE';
     badge.textContent = 'Low Risk';
     badge.className = 'card-badge emerald';
   }
@@ -359,15 +359,15 @@ function renderPrescription(data, inputPayload) {
   if (opt.status === 'Optimal') {
     optBadge.className = 'card-badge emerald';
     actionName.textContent = opt.recommended_action;
-    statusMsg.textContent = `PuLP linear solver found optimal mitigation satisfying budget ($${inputPayload.budget.toLocaleString()}) and SLA (${inputPayload.max_delivery_days} days).`;
+    statusMsg.textContent = `PuLP linear solver identified optimal mitigation satisfying budget ($${inputPayload.budget.toLocaleString()}) and assembly SLA (${inputPayload.max_delivery_days} days).`;
 
     const chosen = opt.chosen_option || (opt.options && opt.options[opt.recommended_action]) || {};
     costVal.textContent = `$${(chosen.cost || 0).toLocaleString()}`;
     daysVal.textContent = `${chosen.delivery_days || 0} Days`;
   } else {
     optBadge.className = 'card-badge amber';
-    actionName.textContent = 'No Feasible Action';
-    statusMsg.textContent = opt.message || 'Constraints violated (e.g. quantity exceeds capacity or budget too tight).';
+    actionName.textContent = 'No Feasible Mitigation Found';
+    statusMsg.textContent = opt.message || 'Constraints violated (e.g., required quantity exceeds fab capacity or budget threshold exceeded).';
     costVal.textContent = '$0';
     daysVal.textContent = 'N/A';
   }
@@ -388,13 +388,13 @@ function renderPrescription(data, inputPayload) {
     row.innerHTML = `
       <td>
         <strong>${name}</strong>
-        ${isSelected ? '<span style="font-size: 0.72rem; color: var(--emerald); margin-left: 0.4rem;">[RECOMMENDED]</span>' : ''}
+        ${isSelected ? '<span style="font-size: 0.72rem; color: var(--emerald); margin-left: 0.4rem;">[OPTIMAL SOLVER CHOICE]</span>' : ''}
       </td>
       <td style="color: #38bdf8; font-weight: 600;">$${details.cost.toLocaleString()}</td>
       <td>${details.delivery_days} Days</td>
       <td>
         <span class="${meetsSla ? 'tag-sla-pass' : 'tag-sla-fail'}">
-          ${meetsSla ? '✔ Pass' : `✖ Exceeds SLA (${details.delivery_days}d > ${inputPayload.max_delivery_days}d)`}
+          ${meetsSla ? '✔ Meets SLA' : `✖ Exceeds SLA (${details.delivery_days}d > ${inputPayload.max_delivery_days}d)`}
         </span>
       </td>
       <td>
@@ -440,7 +440,7 @@ async function loadAuditTrail() {
       const decisions = await decisionsRes.json();
       const tbody = document.getElementById('decisionsTableBody');
       if (decisions.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No decisions logged in SQLite yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No prescriptive decisions recorded in SQLite ledger yet.</td></tr>`;
       } else {
         tbody.innerHTML = decisions.map(d => `
           <tr>
@@ -461,7 +461,7 @@ async function loadAuditTrail() {
       const outcomes = await outcomesRes.json();
       const tbody = document.getElementById('outcomesTableBody');
       if (outcomes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No post-delivery outcomes recorded yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No post-delivery outcomes verified yet.</td></tr>`;
       } else {
         tbody.innerHTML = outcomes.map(o => `
           <tr>
