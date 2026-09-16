@@ -40,11 +40,15 @@ def build_options_dict(
         options = {}
         for name, details in custom_options.items():
             cost = float(details.get("cost", 0))
+            if cost < 0:
+                raise ValueError(f"Option '{name}' cost cannot be negative.")
             delivery_days = details.get("delivery_days")
             if delivery_days is None:
                 delivery_days = int(predicted_delay_days)
             else:
                 delivery_days = int(delivery_days)
+            if delivery_days < 0:
+                raise ValueError(f"Option '{name}' delivery days cannot be negative.")
             options[name] = {"cost": cost, "delivery_days": delivery_days}
         return options
 
@@ -77,6 +81,18 @@ def optimize_shipment(
     Solves binary integer linear programming problem to select the optimal
     supply chain disruption mitigation alternative.
     """
+    # 0. Practical Input Validation
+    if required_quantity <= 0:
+        raise ValueError("Required quantity must be positive (> 0).")
+    if supplier_capacity <= 0:
+        raise ValueError("Supplier capacity must be positive (> 0).")
+    if budget < 0:
+        raise ValueError("Mitigation budget cannot be negative (>= 0).")
+    if max_delivery_days <= 0:
+        raise ValueError("Maximum delivery days (SLA) must be positive (> 0).")
+    if predicted_delay_days < 0:
+        raise ValueError("Predicted delay days cannot be negative (>= 0).")
+
     resolved_options = build_options_dict(predicted_delay_days, options)
 
     # 1. Supplier Capacity Infeasibility Check

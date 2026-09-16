@@ -223,6 +223,102 @@ def run_tests():
         f"Accuracy: {metrics.get('accuracy')}, ROC-AUC: {metrics.get('roc_auc')}"
     )
 
+    # 11. Day 2 Input Validation & Business Constraint Robustness
+    print("\n--- 11. Day 2 Input Validation & Business Constraint Robustness ---")
+
+    # 11a. Zero / Negative Quantity
+    status, res = request_json("/prescribe", method="POST", data={
+        "shipment_id": "CHIP-INV-QTY",
+        "required_quantity": 0,
+        "supplier_capacity": 5000,
+    })
+    assert_test(
+        "Reject Zero Quantity (HTTP 422)",
+        status == 422 and ("greater than 0" in str(res).lower() or "positive" in str(res).lower()),
+        f"Status: {status}, Response: {res}"
+    )
+
+    status, res = request_json("/prescribe", method="POST", data={
+        "shipment_id": "CHIP-INV-QTY",
+        "required_quantity": -500,
+        "supplier_capacity": 5000,
+    })
+    assert_test(
+        "Reject Negative Quantity (HTTP 422)",
+        status == 422 and ("greater than 0" in str(res).lower() or "positive" in str(res).lower()),
+        f"Status: {status}, Response: {res}"
+    )
+
+    # 11b. Invalid Supplier Capacity
+    status, res = request_json("/prescribe", method="POST", data={
+        "shipment_id": "CHIP-INV-CAP",
+        "required_quantity": 1000,
+        "supplier_capacity": 0,
+    })
+    assert_test(
+        "Reject Zero Supplier Capacity (HTTP 422)",
+        status == 422 and ("greater than 0" in str(res).lower() or "positive" in str(res).lower()),
+        f"Status: {status}, Response: {res}"
+    )
+
+    # 11c. Invalid Mitigation Budget
+    status, res = request_json("/prescribe", method="POST", data={
+        "shipment_id": "CHIP-INV-BUDGET",
+        "budget": -1000.0,
+    })
+    assert_test(
+        "Reject Negative Budget (HTTP 422)",
+        status == 422 and ("greater than or equal to 0" in str(res).lower() or "non-negative" in str(res).lower()),
+        f"Status: {status}, Response: {res}"
+    )
+
+    # 11d. Invalid Max Delivery / SLA Days
+    status, res = request_json("/prescribe", method="POST", data={
+        "shipment_id": "CHIP-INV-SLA",
+        "max_delivery_days": 0,
+    })
+    assert_test(
+        "Reject Non-Positive SLA Days (HTTP 422)",
+        status == 422 and ("greater than 0" in str(res).lower() or "positive" in str(res).lower()),
+        f"Status: {status}, Response: {res}"
+    )
+
+    # 11e. Invalid Disruption Duration
+    status, res = request_json("/prescribe", method="POST", data={
+        "shipment_id": "CHIP-INV-DISRUPT",
+        "simulated_delay_days": -10,
+    })
+    assert_test(
+        "Reject Negative Disruption Duration (HTTP 422)",
+        status == 422 and ("greater than or equal to 0" in str(res).lower() or "non-negative" in str(res).lower()),
+        f"Status: {status}, Response: {res}"
+    )
+
+    # 11f. Empty / Blank Shipment ID
+    status, res = request_json("/prescribe", method="POST", data={
+        "shipment_id": "   ",
+    })
+    assert_test(
+        "Reject Whitespace Shipment ID (HTTP 422)",
+        status == 422 and "empty" in str(res).lower(),
+        f"Status: {status}, Response: {res}"
+    )
+
+    # 11g. Capacity Deficit Preserved as Infeasible (PuLP Business Constraint)
+    deficit_payload = {
+        "shipment_id": "CHIP-DEFICIT-01",
+        "required_quantity": 8000,
+        "supplier_capacity": 5000,
+        "budget": 25000.0,
+        "max_delivery_days": 7,
+    }
+    status, def_res = request_json("/prescribe", method="POST", data=deficit_payload)
+    assert_test(
+        "Prescribe Infeasibility Detection on Allocation Deficit",
+        status == 200 and def_res.get("optimization", {}).get("status") == "Infeasible",
+        f"Status: {def_res.get('optimization', {}).get('status')}, Message: {def_res.get('optimization', {}).get('message')}"
+    )
+
     print("\n" + "=" * 70)
     print(f" TEST RESULTS SUMMARY: {passes}/{total} TESTS PASSED")
     print("=" * 70)

@@ -10,8 +10,10 @@ Integrates:
 
 import os
 import json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.optimization import optimize_shipment
@@ -57,6 +59,67 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ============================================================================
+# Global Exception Handlers (Clean API Errors & No Stack Traces)
+# ============================================================================
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Formats Pydantic validation errors into clean user-friendly messages."""
+    error_messages = []
+    for err in exc.errors():
+        field = " -> ".join(str(loc) for loc in err.get("loc", []) if loc != "body")
+        msg = err.get("msg", "Invalid input")
+        error_messages.append(f"{field}: {msg}" if field else msg)
+    summary = "; ".join(error_messages)
+    return JSONResponse(
+        status_code=422,
+        content={
+            "status": "error",
+            "error_type": "ValidationError",
+            "message": summary,
+            "detail": summary,
+            "errors": error_messages,
+        },
+    )
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    """Handles domain and business validation errors with HTTP 400."""
+    return JSONResponse(
+        status_code=400,
+        content={
+            "status": "error",
+            "error_type": "ValueError",
+            "message": str(exc),
+            "detail": str(exc),
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Catches unhandled exceptions without leaking server stack traces."""
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "status": "error",
+                "message": exc.detail,
+                "detail": exc.detail,
+            },
+        )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "error_type": "InternalServerError",
+            "message": "An unexpected error occurred while processing your request.",
+            "detail": str(exc),
+        },
+    )
 
 
 # ============================================================================
