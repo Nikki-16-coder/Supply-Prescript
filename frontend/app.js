@@ -26,7 +26,7 @@ async function initHealthCheck() {
   try {
     const res = await fetch(`${API_BASE}/`);
     if (res.ok) {
-      badge.style.background = 'rgba(16, 185, 129, 0.15)';
+      badge.style.background = 'rgba(16, 185, 129, 0.12)';
       badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
       badge.style.color = '#10b981';
       text.textContent = 'Operational (FastAPI Engine Live)';
@@ -34,10 +34,26 @@ async function initHealthCheck() {
       throw new Error(`HTTP ${res.status}`);
     }
   } catch (err) {
-    badge.style.background = 'rgba(244, 63, 94, 0.15)';
+    badge.style.background = 'rgba(244, 63, 94, 0.12)';
     badge.style.borderColor = 'rgba(244, 63, 94, 0.3)';
     badge.style.color = '#f43f5e';
     text.textContent = 'Backend Offline';
+  }
+}
+
+// ============================================================================
+// 5-Stage Closed-Loop Workflow Stepper Sync
+// ============================================================================
+function updateWorkflowStepper(activeStep) {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById(`step${i}`);
+    if (el) {
+      if (i <= activeStep) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    }
   }
 }
 
@@ -140,7 +156,8 @@ function initPresetButtons() {
         document.getElementById('simulatedDelay').value = data.simulatedDelay;
         document.getElementById('orderRegion').value = data.region;
 
-        showToast(`Configured scenario: ${btn.textContent}`, 'success');
+        updateWorkflowStepper(1);
+        showToast(`Configured scenario: ${btn.textContent.trim()}`, 'success');
       });
     }
   });
@@ -179,7 +196,7 @@ function initFormHandlers() {
     btnPredict.addEventListener('click', async () => {
       const payload = getFormData();
       btnPredict.disabled = true;
-      btnPredict.innerHTML = '<span>⏳</span> Evaluating Risk...';
+      btnPredict.innerHTML = '<span class="btn-icon">⏳</span> Evaluating Risk...';
       try {
         const res = await fetch(`${API_BASE}/predict`, {
           method: 'POST',
@@ -189,12 +206,13 @@ function initFormHandlers() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         renderPrediction(data);
+        updateWorkflowStepper(2);
         showToast(`Disruption risk evaluated for consignment ${data.shipment_id}`, 'success');
       } catch (err) {
         showToast(`Prediction failed: ${err.message}`, 'error');
       } finally {
         btnPredict.disabled = false;
-        btnPredict.innerHTML = '<span>🔍</span> Evaluate Delay Probability (ML)';
+        btnPredict.innerHTML = '<span class="btn-icon">🔍</span> Evaluate Delay Probability (ML)';
       }
     });
   }
@@ -207,7 +225,7 @@ function initFormHandlers() {
       const payload = getFormData();
       const btnSubmit = document.getElementById('btnRunPrescription');
       btnSubmit.disabled = true;
-      btnSubmit.innerHTML = '<span>⏳</span> Solving PuLP MILP...';
+      btnSubmit.innerHTML = '<span class="btn-icon">⏳</span> Solving PuLP MILP...';
       try {
         const res = await fetch(`${API_BASE}/prescribe`, {
           method: 'POST',
@@ -218,12 +236,13 @@ function initFormHandlers() {
         const data = await res.json();
         currentPrescription = data;
         renderPrescription(data, payload);
+        updateWorkflowStepper(3);
         showToast(`Prescriptive mitigation synthesized: ${data.optimization.recommended_action || 'Infeasible'}`, 'success');
       } catch (err) {
         showToast(`Optimization failed: ${err.message}`, 'error');
       } finally {
         btnSubmit.disabled = false;
-        btnSubmit.innerHTML = '<span>⚡</span> Solve Prescriptive Mitigation (PuLP)';
+        btnSubmit.innerHTML = '<span class="btn-icon">⚡</span> Solve Prescriptive Mitigation (PuLP)';
       }
     });
   }
@@ -254,6 +273,7 @@ function initFormHandlers() {
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+        updateWorkflowStepper(4);
         showToast(data.message, 'success');
       } catch (err) {
         showToast(`Failed to record decision: ${err.message}`, 'error');
@@ -289,6 +309,7 @@ function initFormHandlers() {
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+        updateWorkflowStepper(5);
         showToast(data.message, 'success');
       } catch (err) {
         showToast(`Failed to record outcome: ${err.message}`, 'error');
@@ -388,10 +409,10 @@ function renderPrescription(data, inputPayload) {
     row.innerHTML = `
       <td>
         <strong>${name}</strong>
-        ${isSelected ? '<span style="font-size: 0.72rem; color: var(--emerald); margin-left: 0.4rem;">[OPTIMAL SOLVER CHOICE]</span>' : ''}
+        ${isSelected ? '<span style="font-size: 0.72rem; color: var(--emerald); margin-left: 0.4rem; font-weight: 700;">[OPTIMAL SOLVER CHOICE]</span>' : ''}
       </td>
-      <td style="color: #38bdf8; font-weight: 600;">$${details.cost.toLocaleString()}</td>
-      <td>${details.delivery_days} Days</td>
+      <td style="color: #38bdf8; font-weight: 700; font-family: \'JetBrains Mono\', monospace;">$${details.cost.toLocaleString()}</td>
+      <td style="font-family: \'JetBrains Mono\', monospace;">${details.delivery_days} Days</td>
       <td>
         <span class="${meetsSla ? 'tag-sla-pass' : 'tag-sla-fail'}">
           ${meetsSla ? '✔ Meets SLA' : `✖ Exceeds SLA (${details.delivery_days}d > ${inputPayload.max_delivery_days}d)`}
@@ -440,7 +461,7 @@ async function loadAuditTrail() {
       const decisions = await decisionsRes.json();
       const tbody = document.getElementById('decisionsTableBody');
       if (decisions.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No prescriptive decisions recorded in SQLite ledger yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="table-empty-placeholder">No prescriptive decisions recorded in SQLite ledger yet.</td></tr>`;
       } else {
         tbody.innerHTML = decisions.map(d => `
           <tr>
@@ -461,7 +482,7 @@ async function loadAuditTrail() {
       const outcomes = await outcomesRes.json();
       const tbody = document.getElementById('outcomesTableBody');
       if (outcomes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No post-delivery outcomes verified yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="table-empty-placeholder">No post-delivery outcomes verified yet.</td></tr>`;
       } else {
         tbody.innerHTML = outcomes.map(o => `
           <tr>
@@ -469,7 +490,7 @@ async function loadAuditTrail() {
             <td>${o.actual_delivery_days} Days</td>
             <td>$${Number(o.actual_cost).toLocaleString()}</td>
             <td>${o.delay_occurred ? '⚠️ Yes' : '✔ No'}</td>
-            <td>${o.decision_effective ? '<span style="color: var(--emerald);">✔ Effective</span>' : '<span style="color: var(--rose);">✖ Failed</span>'}</td>
+            <td>${o.decision_effective ? '<span style="color: var(--emerald); font-weight: 600;">✔ Effective</span>' : '<span style="color: var(--rose); font-weight: 600;">✖ Failed</span>'}</td>
             <td>${o.feedback_notes || 'No feedback notes'}</td>
             <td style="font-size: 0.75rem;">${o.recorded_at || 'Just now'}</td>
           </tr>

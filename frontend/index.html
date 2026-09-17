@@ -7,7 +7,7 @@
   <meta name="description" content="Closed-loop prescriptive analytics for microchip supply chain decision support. Combines XGBoost delay prediction trained on historical logistics data with PuLP linear programming optimization.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,6 +22,7 @@
       </div>
     </div>
     <div class="nav-actions">
+      <span class="tag-badge">PuLP MILP &bull; XGBoost Engine</span>
       <div id="backendStatusBadge" class="status-badge">
         <span class="status-dot"></span>
         <span id="backendStatusText">Connecting...</span>
@@ -30,7 +31,7 @@
   </header>
 
   <!-- Business Context Flow Banner -->
-  <section class="scenario-banner">
+  <section class="scenario-banner" aria-label="Semiconductor Supply Chain Architecture">
     <div class="scenario-title-area">
       <div class="scenario-icon">🏭</div>
       <div class="scenario-text">
@@ -39,11 +40,63 @@
       </div>
     </div>
     <div class="scenario-chain">
-      <div class="chain-node supplier">🏭 Semiconductor Foundry / Fab (Origin)</div>
+      <div class="chain-node supplier">
+        <span class="chain-badge-icon">🏭</span>
+        <span>Semiconductor Foundry / Fab (Origin)</span>
+      </div>
       <div class="chain-arrow">➔</div>
-      <div class="chain-node cargo">🌐 Global Multi-Modal Freight (In-Transit Disruption Risk)</div>
+      <div class="chain-node cargo">
+        <span class="chain-badge-icon">🌐</span>
+        <span>Global Multi-Modal Freight (In-Transit Disruption Risk)</span>
+      </div>
       <div class="chain-arrow">➔</div>
-      <div class="chain-node manufacturer">⚙️ Electronics OEM Assembly Line (Final Delivery)</div>
+      <div class="chain-node manufacturer">
+        <span class="chain-badge-icon">⚙️</span>
+        <span>Electronics OEM Assembly Line (Final Delivery)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5-Stage Closed-Loop Workflow Sequence -->
+  <section class="workflow-stepper" aria-label="Closed-Loop Decision Workflow Architecture">
+    <div class="stepper-step active" id="step1">
+      <div class="step-num">01</div>
+      <div class="step-content">
+        <span class="step-title">Shipment Configuration</span>
+        <span class="step-sub">Fab Allocation &amp; SLA Budget</span>
+      </div>
+    </div>
+    <div class="stepper-arrow">➔</div>
+    <div class="stepper-step" id="step2">
+      <div class="step-num">02</div>
+      <div class="step-content">
+        <span class="step-title">Predictive Risk Assessment</span>
+        <span class="step-sub">XGBoost Disruption Inference</span>
+      </div>
+    </div>
+    <div class="stepper-arrow">➔</div>
+    <div class="stepper-step" id="step3">
+      <div class="step-num">03</div>
+      <div class="step-content">
+        <span class="step-title">Prescriptive Optimization</span>
+        <span class="step-sub">PuLP MILP Solver Synthesis</span>
+      </div>
+    </div>
+    <div class="stepper-arrow">➔</div>
+    <div class="stepper-step" id="step4">
+      <div class="step-num">04</div>
+      <div class="step-content">
+        <span class="step-title">Manager Authorization</span>
+        <span class="step-sub">SQLite Decision Write-Back</span>
+      </div>
+    </div>
+    <div class="stepper-arrow">➔</div>
+    <div class="stepper-step" id="step5">
+      <div class="step-num">05</div>
+      <div class="step-content">
+        <span class="step-title">Post-Delivery Outcome</span>
+        <span class="step-sub">Closed-Loop SLA Verification</span>
+      </div>
     </div>
   </section>
 
@@ -53,13 +106,13 @@
     <!-- Tab Navigation -->
     <nav class="tabs-nav" aria-label="Dashboard Views">
       <button class="tab-btn active" data-tab="tab-console" id="tabConsoleBtn">
-        <span>🧭</span> Prescriptive Decision Cockpit
+        <span class="tab-icon">🧭</span> Prescriptive Decision Cockpit
       </button>
       <button class="tab-btn" data-tab="tab-audit" id="tabAuditBtn">
-        <span>📋</span> Decision Audit Trail &amp; Governance KPIs
+        <span class="tab-icon">📋</span> Decision Audit Trail &amp; Governance KPIs
       </button>
       <button class="tab-btn" data-tab="tab-ml" id="tabMlBtn">
-        <span>📊</span> Predictive Risk Model &amp; Data Integrity
+        <span class="tab-icon">📊</span> Predictive Risk Model &amp; Data Integrity
       </button>
     </nav>
 
@@ -77,59 +130,83 @@
                 <span class="card-icon">⚙️</span>
                 <h2 class="card-title">Shipment Configuration &amp; Disruption Profile</h2>
               </div>
-              <span class="card-badge cyan">Operational Parameters</span>
+              <span class="card-badge cyan">Phase 01 &bull; Parameters</span>
             </div>
 
             <!-- Preset Scenarios -->
             <div class="form-group">
               <label class="form-label">Operational Disruption Scenarios:</label>
               <div class="preset-bar">
-                <button type="button" class="preset-chip" id="presetStandard">Standard Air Disruption (7d SLA)</button>
-                <button type="button" class="preset-chip" id="presetCritical">Critical Fab Line Expedite (3d SLA)</button>
-                <button type="button" class="preset-chip" id="presetBudget">Constrained Logistics Budget ($10k)</button>
-                <button type="button" class="preset-chip" id="presetInfeasible">Supplier Allocation Deficit (Infeasible Scenario)</button>
+                <button type="button" class="preset-chip" id="presetStandard">
+                  <span class="preset-icon">✈️</span> Standard Air Disruption (7d SLA)
+                </button>
+                <button type="button" class="preset-chip" id="presetCritical">
+                  <span class="preset-icon">🚨</span> Critical Fab Line Expedite (3d SLA)
+                </button>
+                <button type="button" class="preset-chip" id="presetBudget">
+                  <span class="preset-icon">💰</span> Constrained Logistics Budget ($10k)
+                </button>
+                <button type="button" class="preset-chip" id="presetInfeasible">
+                  <span class="preset-icon">⚠️</span> Supplier Allocation Deficit (Infeasible Scenario)
+                </button>
               </div>
             </div>
 
             <form id="prescriptionForm">
               <!-- Microchip Business Constraints -->
-              <div class="section-label">📐 Semiconductor Business &amp; SLA Constraints (PuLP Optimization)</div>
+              <div class="section-label">
+                <span>📐</span> Semiconductor Business &amp; SLA Constraints (PuLP Optimization)
+              </div>
               
               <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="shipmentId">Shipment Consignment ID</label>
-                  <input type="text" id="shipmentId" class="form-input" value="CHIP-TSMC-8840" required>
+                  <input type="text" id="shipmentId" class="form-input mono" value="CHIP-TSMC-8840" required placeholder="e.g. CHIP-TSMC-8840">
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="componentName">Microchip Component Specification</label>
-                  <input type="text" id="componentName" class="form-input" value="4nm AI Accelerators" required>
+                  <input type="text" id="componentName" class="form-input" value="4nm AI Accelerators" required placeholder="e.g. 4nm AI Accelerators">
                 </div>
               </div>
 
               <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="requiredQuantity">Required Production Volume (Units)</label>
-                  <input type="number" id="requiredQuantity" class="form-input" value="5000" min="1" required>
+                  <div class="input-with-unit">
+                    <input type="number" id="requiredQuantity" class="form-input" value="5000" min="1" required>
+                    <span class="input-unit">Units</span>
+                  </div>
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="supplierCapacity">Fab Allocation Capacity (Units)</label>
-                  <input type="number" id="supplierCapacity" class="form-input" value="6000" min="1" required>
+                  <div class="input-with-unit">
+                    <input type="number" id="supplierCapacity" class="form-input" value="6000" min="1" required>
+                    <span class="input-unit">Units</span>
+                  </div>
                 </div>
               </div>
 
               <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="budgetInput">Disruption Mitigation Budget ($ USD)</label>
-                  <input type="number" id="budgetInput" class="form-input" value="20000" min="0" required>
+                  <div class="input-with-unit">
+                    <input type="number" id="budgetInput" class="form-input" value="20000" min="0" required>
+                    <span class="input-unit">$ USD</span>
+                  </div>
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="maxDeliveryDays">Assembly SLA Delivery Deadline (Max Days)</label>
-                  <input type="number" id="maxDeliveryDays" class="form-input" value="7" min="1" required>
+                  <div class="input-with-unit">
+                    <input type="number" id="maxDeliveryDays" class="form-input" value="7" min="1" required>
+                    <span class="input-unit">Days</span>
+                  </div>
                 </div>
               </div>
 
               <!-- Logistics Profile (DataCo Features for ML) -->
-              <div class="section-label">🚚 Logistics Transit Features (DataCo Historical Training Baseline)</div>
+              <div class="section-label">
+                <span>🚚</span> Logistics Transit Features (DataCo Historical Training Baseline)
+              </div>
               
               <div class="form-grid-2">
                 <div class="form-group">
@@ -143,27 +220,33 @@
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="scheduledDays">Baseline Scheduled Transit (Days)</label>
-                  <input type="number" id="scheduledDays" class="form-input" value="2" min="0" max="10" required>
+                  <div class="input-with-unit">
+                    <input type="number" id="scheduledDays" class="form-input" value="2" min="0" max="10" required>
+                    <span class="input-unit">Days</span>
+                  </div>
                 </div>
               </div>
 
               <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="simulatedDelay">Projected Upstream Delay Duration (Days)</label>
-                  <input type="number" id="simulatedDelay" class="form-input" value="14" min="0" required>
+                  <div class="input-with-unit">
+                    <input type="number" id="simulatedDelay" class="form-input" value="14" min="0" required>
+                    <span class="input-unit">Days</span>
+                  </div>
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="orderRegion">Fab Hub / Dispatch Region</label>
-                  <input type="text" id="orderRegion" class="form-input" value="Southeast Asia">
+                  <input type="text" id="orderRegion" class="form-input" value="Southeast Asia" placeholder="e.g. Southeast Asia">
                 </div>
               </div>
 
               <div class="btn-group">
                 <button type="button" class="btn btn-secondary" id="btnRunPrediction">
-                  <span>🔍</span> Evaluate Delay Probability (ML)
+                  <span class="btn-icon">🔍</span> Evaluate Delay Probability (ML)
                 </button>
                 <button type="submit" class="btn btn-primary" id="btnRunPrescription">
-                  <span>⚡</span> Solve Prescriptive Mitigation (PuLP)
+                  <span class="btn-icon">⚡</span> Solve Prescriptive Mitigation (PuLP)
                 </button>
               </div>
             </form>
@@ -189,28 +272,34 @@
                   <div class="risk-label" id="riskLevelLabel">Delay Probability</div>
                   <div class="risk-score" id="riskScoreText">--%</div>
                 </div>
-                <div style="text-align: right;">
+                <div class="risk-projection-box">
                   <div class="risk-label">Projected Incurred Delay</div>
-                  <div style="font-size: 1.5rem; font-weight: 800; color: #fff;" id="predictedDelayText">-- Days</div>
+                  <div class="risk-delay-stat" id="predictedDelayText">-- Days</div>
                 </div>
               </div>
               <div class="meter-track">
                 <div class="meter-fill" id="meterFill" style="width: 0%;"></div>
               </div>
+              <div class="risk-scale-labels">
+                <span>0% Low Risk</span>
+                <span>40% Moderate</span>
+                <span>60%+ High Disruption</span>
+                <span>100%</span>
+              </div>
               <div class="risk-meta-grid">
                 <div class="meta-item">
                   <strong id="metaModelName">XGBoost Disruption Classifier</strong>
-                  <span>Trained on DataCo Historical Logistics Data</span>
+                  <span>Trained on DataCo Historical Logistics Benchmark</span>
                 </div>
                 <div class="meta-item">
                   <strong id="metaStatus">Ready</strong>
-                  <span>Strict Pre-Transit Feature Isolation</span>
+                  <span>Strict Pre-Transit Feature Isolation &bull; Zero Leakage</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Step 3: Prescriptive Optimization Result -->
+          <!-- Step 3, 4, 5: Prescriptive Optimization Result & Closed-Loop Actions -->
           <div class="card" id="optimizationCard">
             <div class="card-header">
               <div class="card-title-group">
@@ -223,42 +312,55 @@
             <!-- Recommended Action Hero Banner -->
             <div class="recommendation-banner" id="recommendationBanner">
               <div class="recommendation-info">
-                <h4>Optimal PuLP Prescriptive Recommendation</h4>
+                <div class="rec-eyebrow">Optimal PuLP Prescriptive Recommendation</div>
                 <div class="recommendation-action" id="recommendedActionName">Solver Standby</div>
-                <p id="recommendationStatusMsg" style="font-size: 0.8rem; color: #cbd5e1; margin-top: 0.25rem;">
+                <p id="recommendationStatusMsg" class="rec-status-msg">
                   Configure constraints and execute PuLP linear solver to compute optimal SLA-compliant mitigation.
                 </p>
               </div>
               <div class="recommendation-stats">
-                <div class="rec-stat-cost" id="recCostValue">$0</div>
-                <div class="rec-stat-days" id="recDaysValue">-- Days</div>
+                <div class="rec-stat-card">
+                  <span class="rec-stat-label">Mitigation Cost</span>
+                  <div class="rec-stat-cost" id="recCostValue">$0</div>
+                </div>
+                <div class="rec-stat-card">
+                  <span class="rec-stat-label">Effective Lead Time</span>
+                  <div class="rec-stat-days" id="recDaysValue">-- Days</div>
+                </div>
               </div>
             </div>
 
             <!-- Alternatives Trade-Off Table -->
-            <table class="options-table">
-              <thead>
-                <tr>
-                  <th>Mitigation Strategy</th>
-                  <th>Mitigation Cost ($)</th>
-                  <th>Lead Time (Days)</th>
-                  <th>SLA Feasibility</th>
-                  <th>Budget Compliance</th>
-                </tr>
-              </thead>
-              <tbody id="optionsTableBody">
-                <tr>
-                  <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
-                    No optimization run executed. Configure parameters and run prescriptive solver.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-container">
+              <table class="options-table">
+                <thead>
+                  <tr>
+                    <th>Mitigation Strategy</th>
+                    <th>Mitigation Cost ($)</th>
+                    <th>Lead Time (Days)</th>
+                    <th>SLA Feasibility</th>
+                    <th>Budget Compliance</th>
+                  </tr>
+                </thead>
+                <tbody id="optionsTableBody">
+                  <tr>
+                    <td colspan="5" class="table-empty-placeholder">
+                      No optimization run executed. Configure parameters and run prescriptive solver.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
             <!-- Step 4: Manager Decision Recording -->
             <div class="closed-loop-box" id="managerDecisionBox">
-              <div class="section-label">✍️ Closed-Loop Phase 4: Supply Chain Manager Authorization &amp; Write-Back</div>
-              <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+              <div class="box-header-row">
+                <div class="section-label">
+                  <span>✍️</span> Closed-Loop Phase 4: Supply Chain Manager Authorization &amp; Write-Back
+                </div>
+                <span class="stage-pill">Phase 04</span>
+              </div>
+              <p class="box-helper-text">
                 Select authorized mitigation action to persist to the centralized SQLite decision ledger:
               </p>
               
@@ -272,21 +374,32 @@
               </div>
 
               <button type="button" class="btn btn-success" id="btnRecordDecision">
-                <span>💾</span> Commit Decision to Audit Ledger (SQLite)
+                <span class="btn-icon">💾</span> Commit Decision to Audit Ledger (SQLite)
               </button>
             </div>
 
             <!-- Step 5: Post-Shipment Outcome Tracking -->
-            <div class="closed-loop-box" id="outcomeTrackingBox" style="margin-top: 1.25rem;">
-              <div class="section-label">📊 Closed-Loop Phase 5: Post-Delivery Outcome &amp; SLA Verification</div>
+            <div class="closed-loop-box outcome-box" id="outcomeTrackingBox">
+              <div class="box-header-row">
+                <div class="section-label">
+                  <span>📊</span> Closed-Loop Phase 5: Post-Delivery Outcome &amp; SLA Verification
+                </div>
+                <span class="stage-pill">Phase 05</span>
+              </div>
               <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="actualDays">Realized Delivery Lead Time (Days)</label>
-                  <input type="number" id="actualDays" class="form-input" value="2" min="1">
+                  <div class="input-with-unit">
+                    <input type="number" id="actualDays" class="form-input" value="2" min="1">
+                    <span class="input-unit">Days</span>
+                  </div>
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="actualCost">Realized Incurred Cost ($ USD)</label>
-                  <input type="number" id="actualCost" class="form-input" value="15000" min="0">
+                  <div class="input-with-unit">
+                    <input type="number" id="actualCost" class="form-input" value="15000" min="0">
+                    <span class="input-unit">$ USD</span>
+                  </div>
                 </div>
               </div>
               <div class="form-grid-2">
@@ -299,11 +412,11 @@
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="feedbackNotes">Operational Verification Notes</label>
-                  <input type="text" id="feedbackNotes" class="form-input" value="Zero assembly downtime. Decision satisfied SLA.">
+                  <input type="text" id="feedbackNotes" class="form-input" value="Zero assembly downtime. Decision satisfied SLA." placeholder="Verification notes">
                 </div>
               </div>
               <button type="button" class="btn btn-secondary" id="btnRecordOutcome">
-                <span>📝</span> Log Post-Delivery Outcome &amp; Close Feedback Loop
+                <span class="btn-icon">📝</span> Log Post-Delivery Outcome &amp; Close Feedback Loop
               </button>
             </div>
 
@@ -319,32 +432,36 @@
       
       <!-- KPI Metric Cards -->
       <div class="kpi-grid">
-        <div class="kpi-card">
+        <div class="kpi-card kpi-cyan">
           <div class="kpi-icon">📦</div>
-          <div>
+          <div class="kpi-body">
             <div class="kpi-value" id="kpiTotalShipments">0</div>
             <div class="kpi-title">Consignments Monitored</div>
+            <div class="kpi-meta">Active Fab Logistics Pipelines</div>
           </div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-amber">
           <div class="kpi-icon">⚠️</div>
-          <div>
+          <div class="kpi-body">
             <div class="kpi-value" id="kpiAvgRisk">0%</div>
-            <div class="kpi-title">Mean Predicted Disruption Probability</div>
+            <div class="kpi-title">Mean Disruption Probability</div>
+            <div class="kpi-meta">Pre-Transit ML Inference</div>
           </div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-indigo">
           <div class="kpi-icon">🎯</div>
-          <div>
+          <div class="kpi-body">
             <div class="kpi-value" id="kpiOptimalCount">0</div>
             <div class="kpi-title">Optimal Prescriptions Synthesized</div>
+            <div class="kpi-meta">SLA Feasible via PuLP MILP</div>
           </div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-emerald">
           <div class="kpi-icon">✅</div>
-          <div>
+          <div class="kpi-body">
             <div class="kpi-value" id="kpiEffectiveness">100%</div>
-            <div class="kpi-title">Realized Mitigation Effectiveness</div>
+            <div class="kpi-title">Mitigation Effectiveness</div>
+            <div class="kpi-meta">Assembly Line SLA Compliance</div>
           </div>
         </div>
       </div>
@@ -356,8 +473,8 @@
             <span class="card-icon">🗃️</span>
             <h3 class="card-title">Persistent Prescriptive Decisions Ledger (SQLite Audit Trail)</h3>
           </div>
-          <button type="button" class="btn btn-secondary" id="btnRefreshAudit" style="padding: 0.4rem 0.9rem; font-size: 0.8rem;">
-            <span>🔄</span> Refresh Audit Trail
+          <button type="button" class="btn btn-secondary" id="btnRefreshAudit" style="padding: 0.45rem 1rem; font-size: 0.82rem;">
+            <span class="btn-icon">🔄</span> Refresh Audit Trail
           </button>
         </div>
 
@@ -377,7 +494,7 @@
             </thead>
             <tbody id="decisionsTableBody">
               <tr>
-                <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                <td colspan="8" class="table-empty-placeholder">
                   Loading SQLite records...
                 </td>
               </tr>
@@ -410,7 +527,7 @@
             </thead>
             <tbody id="outcomesTableBody">
               <tr>
-                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                <td colspan="7" class="table-empty-placeholder">
                   No outcomes logged yet.
                 </td>
               </tr>
@@ -430,52 +547,58 @@
           <div class="card-header">
             <div class="card-title-group">
               <span class="card-icon">📊</span>
-              <h3 class="card-title">XGBoost Delay Risk Classifier — Validation Metrics</h3>
+              <h3 class="card-title">XGBoost Delay Risk Classifier &mdash; Validation Metrics</h3>
             </div>
-            <span class="card-badge cyan">Evaluation Metrics</span>
+            <span class="card-badge cyan">Held-Out Test Set</span>
           </div>
 
-          <div class="risk-meta-grid" style="grid-template-columns: repeat(2, 1fr); margin-top: 0;">
-            <div class="meta-item">
-              <strong id="mlMetricAcc">69.80%</strong>
-              <span>Overall Classification Accuracy</span>
+          <div class="kpi-mini-grid">
+            <div class="mini-kpi-card">
+              <div class="mini-kpi-val" id="mlMetricAcc">69.80%</div>
+              <div class="mini-kpi-label">Classification Accuracy</div>
+              <div class="mini-kpi-meta">Baseline Benchmark</div>
             </div>
-            <div class="meta-item">
-              <strong id="mlMetricPrec">84.31%</strong>
-              <span>Disruption Precision (Positive Class: Delay = 1)</span>
+            <div class="mini-kpi-card">
+              <div class="mini-kpi-val" id="mlMetricPrec">84.31%</div>
+              <div class="mini-kpi-label">Disruption Precision</div>
+              <div class="mini-kpi-meta">Positive Class (Delay = 1)</div>
             </div>
-            <div class="meta-item">
-              <strong id="mlMetricF1">0.6670</strong>
-              <span>F1-Score (Harmonic Mean)</span>
+            <div class="mini-kpi-card">
+              <div class="mini-kpi-val" id="mlMetricF1">0.6670</div>
+              <div class="mini-kpi-label">F1-Score</div>
+              <div class="mini-kpi-meta">Harmonic Mean</div>
             </div>
-            <div class="meta-item">
-              <strong id="mlMetricAuc">0.7370</strong>
-              <span>Area Under ROC Curve (ROC-AUC)</span>
+            <div class="mini-kpi-card">
+              <div class="mini-kpi-val" id="mlMetricAuc">0.7370</div>
+              <div class="mini-kpi-label">ROC-AUC</div>
+              <div class="mini-kpi-meta">Area Under Curve</div>
             </div>
           </div>
 
           <div class="section-label" style="margin-top: 1.5rem;">Held-Out Test Confusion Matrix (N = 36,104 Logistics Dispatches)</div>
-          <table class="options-table">
-            <thead>
-              <tr>
-                <th>True \ Predicted</th>
-                <th>Predicted On-Time (0)</th>
-                <th>Predicted Delayed (1)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>Actual On-Time (0)</strong></td>
-                <td style="color: var(--emerald);">14,276 (True Negative)</td>
-                <td style="color: var(--rose);">2,032 (False Positive)</td>
-              </tr>
-              <tr>
-                <td><strong>Actual Delayed (1)</strong></td>
-                <td style="color: var(--rose);">8,873 (False Negative)</td>
-                <td style="color: var(--cyan);">10,923 (True Positive)</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-container">
+            <table class="options-table matrix-table">
+              <thead>
+                <tr>
+                  <th>True \ Predicted</th>
+                  <th>Predicted On-Time (0)</th>
+                  <th>Predicted Delayed (1)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Actual On-Time (0)</strong></td>
+                  <td class="matrix-cell-tn"><strong>14,276</strong> <span class="matrix-tag">True Negative (TN)</span></td>
+                  <td class="matrix-cell-fp"><strong>2,032</strong> <span class="matrix-tag">False Positive (FP)</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Actual Delayed (1)</strong></td>
+                  <td class="matrix-cell-fn"><strong>8,873</strong> <span class="matrix-tag">False Negative (FN)</span></td>
+                  <td class="matrix-cell-tp"><strong>10,923</strong> <span class="matrix-tag">True Positive (TP)</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div class="card">
@@ -484,23 +607,53 @@
               <span class="card-icon">🛡️</span>
               <h3 class="card-title">Data Governance &amp; Domain Decoupling Architecture</h3>
             </div>
+            <span class="card-badge emerald">Zero Data Leakage</span>
           </div>
           
-          <div style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
-            <p style="margin-bottom: 0.75rem;">
-              <strong style="color: #fff;">Dataset Integrity &amp; Baseline Purpose:</strong> We utilize the DataCo Supply Chain dataset (180,519 multimodal logistics records) strictly as historical logistics training data for delay probability estimation. It is not labeled as a microchip dataset, but rather models historical freight courier transit times across geographic regions and transit modes.
-            </p>
-            <p style="margin-bottom: 0.75rem;">
-              <strong style="color: #fff;">Zero Data Leakage Protocol:</strong> To prevent target contamination, post-transit tracking attributes are strictly excluded from predictive model training. Only pre-dispatch scheduling and transit configuration features are provided to the XGBoost inference pipeline:
-            </p>
-            <ul style="margin-left: 1.5rem; margin-bottom: 1rem; color: var(--rose);">
-              <li><code>Days for shipping (real)</code> &mdash; Excluded (reveals actual arrival date)</li>
-              <li><code>Delivery Status</code> &mdash; Excluded (reveals late delivery label)</li>
-              <li><code>shipping date (DateOrders)</code> &mdash; Excluded (reveals exact transit duration)</li>
-            </ul>
-            <p>
-              <strong style="color: #fff;">Prescriptive Domain Decoupling:</strong> Domain-specific semiconductor operations&mdash;such as fab wafer allocation, high-priority assembly line deadlines, component BOM quantities, and expedite budgets&mdash;are isolated within the PuLP MILP optimization engine and persistent SQLite audit trail, connecting generalized logistics intelligence to microchip manufacturing decisions.
-            </p>
+          <div class="governance-content">
+            <div class="gov-callout info">
+              <div class="gov-callout-title">
+                <span>📌</span> Dataset Integrity &amp; Baseline Logistics Purpose
+              </div>
+              <p>
+                We utilize the <strong>DataCo Supply Chain dataset (180,519 multimodal logistics records)</strong> strictly as historical logistics training data for freight delay probability estimation. <em>It is not labeled or presented as a microchip dataset</em>, but rather models historical freight courier transit times across geographic regions, customer segments, and transit modes.
+              </p>
+            </div>
+
+            <div class="gov-callout alert">
+              <div class="gov-callout-title">
+                <span>🛡️</span> Zero Data Leakage Protocol
+              </div>
+              <p>
+                To strictly prevent target contamination, post-transit tracking attributes are completely excluded from predictive model training. Only pre-dispatch scheduling and transit configuration features are provided to the XGBoost inference pipeline:
+              </p>
+              <div class="leakage-list">
+                <div class="leakage-item">
+                  <span class="leakage-badge">EXCLUDED</span>
+                  <code>Days for shipping (real)</code>
+                  <span class="leakage-reason">&mdash; Reveals actual arrival date</span>
+                </div>
+                <div class="leakage-item">
+                  <span class="leakage-badge">EXCLUDED</span>
+                  <code>Delivery Status</code>
+                  <span class="leakage-reason">&mdash; Directly reveals late delivery label</span>
+                </div>
+                <div class="leakage-item">
+                  <span class="leakage-badge">EXCLUDED</span>
+                  <code>shipping date (DateOrders)</code>
+                  <span class="leakage-reason">&mdash; Reveals exact realized transit duration</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="gov-callout success">
+              <div class="gov-callout-title">
+                <span>⚡</span> Prescriptive Domain Decoupling
+              </div>
+              <p>
+                Domain-specific semiconductor operations&mdash;such as fab wafer allocation, high-priority assembly line deadlines, component BOM quantities, and expedite budgets&mdash;are isolated within the <strong>PuLP MILP optimization engine and persistent SQLite audit trail</strong>, bridging generalized logistics intelligence to microchip manufacturing decisions without synthetic data contamination.
+              </p>
+            </div>
           </div>
         </div>
       </div>
