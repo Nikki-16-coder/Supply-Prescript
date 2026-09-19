@@ -22,6 +22,7 @@ from ml.preprocess import (
     APPROVED_NUMERICAL_FEATURES,
     APPROVED_CATEGORICAL_FEATURES,
     APPROVED_FEATURES,
+    FORBIDDEN_LEAKAGE_COLUMNS,
     MODELS_DIR,
     PREPROCESSOR_PATH,
 )
@@ -51,6 +52,7 @@ class DelayPredictor:
     """Predictor class for SupplyPrescript delay risk inference."""
 
     def __init__(self, models_dir: str = MODELS_DIR):
+        self.models_dir = models_dir
         self.preprocessor_path = os.path.join(models_dir, "preprocessor.joblib")
         self.classifier_path = os.path.join(models_dir, "xgb_classifier.joblib")
         self.regressor_path = os.path.join(models_dir, "xgb_regressor.joblib")
@@ -70,16 +72,32 @@ class DelayPredictor:
                 f"Classifier artifact not found at {self.classifier_path}. Please run ml/train.py first."
             )
 
-        self.preprocessor = joblib.load(self.preprocessor_path)
-        self.classifier = joblib.load(self.classifier_path)
+        try:
+            self.preprocessor = joblib.load(self.preprocessor_path)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to load preprocessor artifact from {self.preprocessor_path}: {exc}"
+            ) from exc
+
+        try:
+            self.classifier = joblib.load(self.classifier_path)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to load classifier artifact from {self.classifier_path}: {exc}"
+            ) from exc
 
         if os.path.exists(self.regressor_path):
-            self.regressor = joblib.load(self.regressor_path)
+            try:
+                self.regressor = joblib.load(self.regressor_path)
+            except Exception as exc:
+                raise RuntimeError(
+                    f"Failed to load regressor artifact from {self.regressor_path}: {exc}"
+                ) from exc
         else:
             self.regressor = None
 
     def _prepare_input_df(self, shipment_data: Dict[str, Any]) -> pd.DataFrame:
-        """Constructs a single-row DataFrame with all 13 approved features."""
+        """Constructs a single-row DataFrame with all 13 approved features with validation."""
         row_dict = {}
         for feature in APPROVED_FEATURES:
             # Check direct match or case-insensitive/underscore match
@@ -96,11 +114,31 @@ class DelayPredictor:
 
         df = pd.DataFrame(row_dict)
 
-        # Ensure correct dtypes
+        # Ensure correct dtypes and validate numerical boundaries
         for col in APPROVED_NUMERICAL_FEATURES:
-            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
+            raw_val = df[col].iloc[0]
+            try:
+                num_val = float(raw_val)
+                if np.isnan(num_val):
+                    num_val = float(DEFAULT_FEATURE_VALUES.get(col, 0.0))
+            except (ValueError, TypeError):
+                raise ValueError(f"Invalid numeric value for '{col}': {raw_val}")
+
+            # Business constraints for numerical fields
+            if col == "Days for shipment (scheduled)" and num_val < 0:
+                raise ValueError("Scheduled transit days must be non-negative (>= 0).")
+            elif col == "Order Item Quantity" and num_val <= 0:
+                raise ValueError("Order Item Quantity must be positive (> 0).")
+            elif col in ("Order Item Product Price", "Product Price", "Order Item Discount") and num_val < 0:
+                raise ValueError(f"{col} must be non-negative (>= 0).")
+            elif col == "Order Item Discount Rate" and not (0.0 <= num_val <= 1.0):
+                raise ValueError("Order Item Discount Rate must be between 0.0 and 1.0.")
+
+            df[col] = [num_val]
+
         for col in APPROVED_CATEGORICAL_FEATURES:
-            df[col] = df[col].astype(str)
+            raw_val = df[col].iloc[0]
+            df[col] = [str(raw_val) if raw_val is not None else "Unknown"]
 
         return df
 
@@ -115,6 +153,23 @@ class DelayPredictor:
           "predicted_delay_days": 14
         }
         """
+        if not isinstance(shipment_data, dict):
+            raise TypeError(
+                f"Invalid shipment_data: expected a dictionary, got {type(shipment_data).__name__}"
+            )
+
+        # Strict data leakage prevention: reject post-transit outcome fields
+        forbidden_normalized = {
+            col.lower().replace(" ", "_").replace("(", "").replace(")", ""): col
+            for col in FORBIDDEN_LEAKAGE_COLUMNS
+        }
+        for k in shipment_data.keys():
+            k_norm = str(k).lower().replace(" ", "_").replace("(", "").replace(")", "")
+            if k in FORBIDDEN_LEAKAGE_COLUMNS or k_norm in forbidden_normalized:
+                raise ValueError(
+                    f"DATA LEAKAGE ERROR: Prohibited post-transit column '{k}' cannot be used during inference."
+                )
+
         shipment_id = str(shipment_data.get("shipment_id", "SHP001"))
 
         df_input = self._prepare_input_df(shipment_data)
@@ -123,18 +178,26 @@ class DelayPredictor:
         # 1. Delay Probability from Classifier
         probabilities = self.classifier.predict_proba(X_trans)[0]
         delay_prob = round(float(probabilities[1]), 2)
+        delay_prob = max(0.0, min(1.0, delay_prob))
 
         # 2. Predicted Delay Days
-        # If user explicitly supplied a simulated disruption duration, honor it
-        explicit_delay = shipment_data.get("simulated_delay_days") or shipment_data.get("disruption_days")
+        explicit_delay = shipment_data.get("simulated_delay_days")
+        if explicit_delay is None:
+            explicit_delay = shipment_data.get("disruption_days")
+
         if explicit_delay is not None:
-            predicted_delay_days = int(explicit_delay) if delay_prob >= 0.5 else 0
+            try:
+                exp_int = int(explicit_delay)
+            except (ValueError, TypeError):
+                raise ValueError(f"Invalid simulated_delay_days value: {explicit_delay}")
+            if exp_int < 0:
+                raise ValueError("Simulated delay days must be non-negative (>= 0).")
+            predicted_delay_days = exp_int if delay_prob >= 0.5 else 0
         elif delay_prob >= 0.5:
             if self.regressor is not None:
                 reg_pred = float(self.regressor.predict(X_trans)[0])
                 predicted_delay_days = max(1, int(round(reg_pred)))
             else:
-                # Fallback to standard logistics delay duration estimate
                 scheduled = float(df_input["Days for shipment (scheduled)"].iloc[0])
                 predicted_delay_days = max(1, int(round(scheduled * 0.5)))
         else:
@@ -143,7 +206,7 @@ class DelayPredictor:
         return {
             "shipment_id": shipment_id,
             "delay_probability": delay_prob,
-            "predicted_delay_days": predicted_delay_days,
+            "predicted_delay_days": int(predicted_delay_days),
         }
 
 
@@ -156,6 +219,12 @@ def get_predictor() -> DelayPredictor:
     if _predictor_instance is None:
         _predictor_instance = DelayPredictor()
     return _predictor_instance
+
+
+def reset_predictor() -> None:
+    """Resets the singleton DelayPredictor instance (useful for testing)."""
+    global _predictor_instance
+    _predictor_instance = None
 
 
 def predict_shipment(shipment_data: Dict[str, Any]) -> Dict[str, Any]:
