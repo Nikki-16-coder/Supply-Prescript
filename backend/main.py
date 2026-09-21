@@ -33,8 +33,10 @@ from database.db import (
     save_shipment,
     save_prediction,
     save_optimization_decision,
+    save_prescribe_audit,
     update_manager_decision,
     save_outcome,
+    shipment_exists,
     get_all_shipments,
     get_all_decisions,
     get_all_outcomes,
@@ -221,11 +223,11 @@ def prescribe_solution_api(request: PrescribeRequest):
         options=request.options,
     )
 
-    # 3. Automatic Database Write-Back for Audit Trail
+    # 3. Automatic Database Write-Back for Audit Trail (Atomic Transaction)
     try:
-        save_shipment(payload)
-        save_prediction(prediction)
-        save_optimization_decision(
+        save_prescribe_audit(
+            shipment_data=payload,
+            prediction_data=prediction,
             shipment_id=request.shipment_id,
             budget=request.budget,
             max_delivery_days=request.max_delivery_days,
@@ -268,7 +270,15 @@ def record_manager_decision(request: ManagerDecisionRequest):
 @app.post("/outcome")
 def record_shipment_outcome(request: OutcomeEvaluationRequest):
     """Records the real-world post-mitigation outcome and performance evaluation."""
-    outcome_id = save_outcome(request.model_dump())
+    if not shipment_exists(request.shipment_id):
+        raise HTTPException(
+            status_code=404,
+            detail=f"No shipment found with ID '{request.shipment_id}' to associate outcome.",
+        )
+    try:
+        outcome_id = save_outcome(request.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     return {
         "status": "success",
         "outcome_id": outcome_id,
