@@ -15,6 +15,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.optimization import optimize_shipment
 from backend.schemas import (
@@ -87,6 +88,19 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Formats standard HTTP exceptions into clean, unified JSON error responses."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "status": "error",
+            "message": exc.detail,
+            "detail": exc.detail,
+        },
+    )
+
+
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError):
     """Handles domain and business validation errors with HTTP 400."""
@@ -104,7 +118,7 @@ async def value_error_handler(request: Request, exc: ValueError):
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
     """Catches unhandled exceptions without leaking server stack traces."""
-    if isinstance(exc, HTTPException):
+    if isinstance(exc, (HTTPException, StarletteHTTPException)):
         return JSONResponse(
             status_code=exc.status_code,
             content={

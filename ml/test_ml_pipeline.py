@@ -5,10 +5,13 @@ Leakage Prevention, and Contract Verification.
 """
 
 import os
+import sys
 import shutil
 import tempfile
 import unittest
 import numpy as np
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ml.preprocess import (
     APPROVED_NUMERICAL_FEATURES,

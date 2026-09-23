@@ -13,12 +13,42 @@ Simulates full user journey from Frontend Dashboard against live FastAPI & SQLit
 10. ML Metrics Verification
 """
 
+import os
+import sys
+import time
 import json
 import urllib.request
 import urllib.error
-import sys
+import threading
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 BASE_URL = "http://127.0.0.1:8000"
+
+def is_server_running(url=BASE_URL):
+    try:
+        req = urllib.request.Request(f"{url}/", method="GET")
+        with urllib.request.urlopen(req, timeout=1) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+def ensure_server_running():
+    if is_server_running():
+        return None
+    import uvicorn
+    from backend.main import app
+
+    config = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+
+    for _ in range(50):
+        time.sleep(0.1)
+        if is_server_running():
+            break
+    return server
 
 def request_json(path, method="GET", data=None):
     url = f"{BASE_URL}{path}"
@@ -319,6 +349,184 @@ def run_tests():
         f"Status: {def_res.get('optimization', {}).get('status')}, Message: {def_res.get('optimization', {}).get('message')}"
     )
 
+    # 12. History & Listing Endpoints Contract
+    print("\n--- 12. History & Listing Endpoints Contract ---")
+    status, decisions = request_json("/history/decisions")
+    assert_test(
+        "History Decisions Listing Endpoint",
+        status == 200 and isinstance(decisions, list) and len(decisions) > 0,
+        f"Retrieved {len(decisions)} decision records"
+    )
+
+    status, outcomes = request_json("/history/outcomes")
+    assert_test(
+        "History Outcomes Listing Endpoint",
+        status == 200 and isinstance(outcomes, list) and len(outcomes) > 0,
+        f"Retrieved {len(outcomes)} outcome records"
+    )
+
+    status, shipments = request_json("/history/shipments")
+    assert_test(
+        "History Shipments Listing Endpoint",
+        status == 200 and isinstance(shipments, list) and len(shipments) > 0,
+        f"Retrieved {len(shipments)} shipment records"
+    )
+
+    # 13. Missing-Resource Handling (HTTP 404)
+    print("\n--- 13. Missing-Resource Handling (HTTP 404) ---")
+    status, res = request_json("/decision", method="POST", data={
+        "shipment_id": "CHIP-NONEXISTENT-999",
+        "manager_decision": "Air Freight",
+    })
+    assert_test(
+        "Reject Decision for Untracked Shipment (HTTP 404)",
+        status == 404 and "no optimization decision" in str(res).lower(),
+        f"Status: {status}, Response: {res}"
+    )
+
+    status, res = request_json("/outcome", method="POST", data={
+        "shipment_id": "CHIP-NONEXISTENT-999",
+        "actual_delivery_days": 2,
+        "actual_cost": 15000.0,
+        "decision_effective": 1,
+    })
+    assert_test(
+        "Reject Outcome for Untracked Shipment (HTTP 404)",
+        status == 404 and "no shipment found" in str(res).lower(),
+        f"Status: {status}, Response: {res}"
+    )
+
+    status, res = request_json("/history/CHIP-NONEXISTENT-999")
+    assert_test(
+        "Reject Audit Trail for Untracked Shipment (HTTP 404)",
+        status == 404 and "no records found" in str(res).lower(),
+        f"Status: {status}, Response: {res}"
+    )
+
+    # 14. Manager Decision Schema Validation (HTTP 422)
+    print("\n--- 14. Manager Decision Schema Validation (HTTP 422) ---")
+    status, res = request_json("/decision", method="POST", data={
+        "shipment_id": "CHIP-LIVE-VERIFY-01",
+        "manager_decision": "   ",
+    })
+    assert_test(
+        "Reject Whitespace Manager Decision (HTTP 422)",
+        status == 422 and "empty" in str(res).lower(),
+        f"Status: {status}, Response: {res}"
+    )
+
+    status, res = request_json("/decision", method="POST", data={
+        "shipment_id": "   ",
+        "manager_decision": "Air Freight",
+    })
+    assert_test(
+        "Reject Whitespace Shipment ID on Decision (HTTP 422)",
+        status == 422 and "empty" in str(res).lower(),
+        f"Status: {status}, Response: {res}"
+    )
+
+    # 15. Post-Delivery Outcome Schema Validation (HTTP 422)
+    print("\n--- 15. Post-Delivery Outcome Schema Validation (HTTP 422) ---")
+    status, res = request_json("/outcome", method="POST", data={
+        "shipment_id": "CHIP-LIVE-VERIFY-01",
+        "actual_delivery_days": -2,
+        "actual_cost": 5000.0,
+    })
+    assert_test(
+        "Reject Negative Actual Delivery Days (HTTP 422)",
+        status == 422 and ("greater than or equal to 0" in str(res).lower() or "non-negative" in str(res).lower() or "ge" in str(res).lower()),
+        f"Status: {status}, Response: {res}"
+    )
+
+    status, res = request_json("/outcome", method="POST", data={
+        "shipment_id": "CHIP-LIVE-VERIFY-01",
+        "actual_delivery_days": 3,
+        "actual_cost": -500.0,
+    })
+    assert_test(
+        "Reject Negative Actual Cost (HTTP 422)",
+        status == 422 and ("greater than or equal to 0" in str(res).lower() or "non-negative" in str(res).lower() or "ge" in str(res).lower()),
+        f"Status: {status}, Response: {res}"
+    )
+
+    status, res = request_json("/outcome", method="POST", data={
+        "shipment_id": "CHIP-LIVE-VERIFY-01",
+        "actual_delivery_days": 3,
+        "actual_cost": 5000.0,
+        "decision_effective": 2,
+    })
+    assert_test(
+        "Reject Out-of-Range Decision Effective Flag (HTTP 422)",
+        status == 422 and ("less than or equal to 1" in str(res).lower() or "le" in str(res).lower()),
+        f"Status: {status}, Response: {res}"
+    )
+
+    status, res = request_json("/outcome", method="POST", data={
+        "shipment_id": "   ",
+        "actual_delivery_days": 3,
+        "actual_cost": 5000.0,
+    })
+    assert_test(
+        "Reject Whitespace Shipment ID on Outcome (HTTP 422)",
+        status == 422 and "empty" in str(res).lower(),
+        f"Status: {status}, Response: {res}"
+    )
+
+    # 16. Explicit ML -> Prescription Handoff & Closed-Loop Decoupling
+    print("\n--- 16. Explicit ML -> Prescription Handoff & Closed-Loop Decoupling ---")
+    disrupted_payload = {
+        "shipment_id": "CHIP-HANDOFF-DISRUPTED",
+        "simulated_delay_days": 14,
+        "budget": 20000.0,
+        "max_delivery_days": 7,
+        "required_quantity": 5000,
+        "supplier_capacity": 6000,
+    }
+    status, d_res = request_json("/prescribe", method="POST", data=disrupted_payload)
+    pred_days = d_res.get("prediction", {}).get("predicted_delay_days")
+    opt_accept_delay = d_res.get("optimization", {}).get("options", {}).get("Accept Delay", {}).get("delivery_days")
+    assert_test(
+        "ML Disruption Delay Injected into Optimization Accept Delay Option",
+        status == 200 and pred_days == 14 and opt_accept_delay == 14,
+        f"Prediction={pred_days}, PuLP Accept Delay={opt_accept_delay}"
+    )
+
+    rec_action = d_res.get("optimization", {}).get("recommended_action")
+    assert_test(
+        "PuLP Excludes Accept Delay When ML Delay Exceeds SLA",
+        status == 200 and rec_action == "Air Freight",
+        f"Recommended Action: {rec_action} (SLA=7 days, Accept Delay=14 days)"
+    )
+
+    normal_payload = {
+        "shipment_id": "CHIP-HANDOFF-NORMAL",
+        "simulated_delay_days": 0,
+        "budget": 20000.0,
+        "max_delivery_days": 7,
+        "required_quantity": 5000,
+        "supplier_capacity": 6000,
+    }
+    status, n_res = request_json("/prescribe", method="POST", data=normal_payload)
+    n_pred_days = n_res.get("prediction", {}).get("predicted_delay_days")
+    n_opt_days = n_res.get("optimization", {}).get("options", {}).get("Accept Delay", {}).get("delivery_days")
+    n_action = n_res.get("optimization", {}).get("recommended_action")
+    assert_test(
+        "PuLP Optimal Solver Selects Accept Delay for Zero Predicted Disruption",
+        status == 200 and n_pred_days == 0 and n_opt_days == 0 and n_action == "Accept Delay",
+        f"Action: {n_action}, Delivery Days: {n_opt_days}, Cost: $0"
+    )
+
+    status, hist = request_json("/history/CHIP-HANDOFF-DISRUPTED")
+    assert_test(
+        "Database Audit Trail Verifies Multi-Entity Closed-Loop Linkage",
+        status == 200
+        and hist.get("shipment", {}).get("shipment_id") == "CHIP-HANDOFF-DISRUPTED"
+        and len(hist.get("predictions", [])) > 0
+        and len(hist.get("decisions", [])) > 0
+        and hist.get("decisions", [])[0].get("recommended_action") == "Air Freight",
+        f"Linked Shipment: {hist.get('shipment', {}).get('shipment_id')}, Predictions: {len(hist.get('predictions', []))}, Decisions: {len(hist.get('decisions', []))}"
+    )
+
     print("\n" + "=" * 70)
     print(f" TEST RESULTS SUMMARY: {passes}/{total} TESTS PASSED")
     print("=" * 70)
@@ -331,4 +539,10 @@ def run_tests():
         return 1
 
 if __name__ == "__main__":
-    sys.exit(run_tests())
+    server = ensure_server_running()
+    try:
+        sys.exit(run_tests())
+    finally:
+        if server:
+            server.should_exit = True
+

@@ -5,10 +5,13 @@ Atomic Closed-Loop Persistence, Transaction Rollback, and KPI Calculations.
 """
 
 import os
+import sys
 import shutil
 import tempfile
 import unittest
 import sqlite3
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.db import (
     init_db,
