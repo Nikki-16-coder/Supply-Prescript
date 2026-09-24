@@ -196,7 +196,7 @@ function initFormHandlers() {
     btnPredict.addEventListener('click', async () => {
       const payload = getFormData();
       btnPredict.disabled = true;
-      btnPredict.innerHTML = '<span class="btn-icon">⏳</span> Evaluating Risk...';
+      btnPredict.innerHTML = '<span class="btn-spinner"></span> <span>Evaluating Risk...</span>';
       try {
         const res = await fetch(`${API_BASE}/predict`, {
           method: 'POST',
@@ -212,7 +212,15 @@ function initFormHandlers() {
         showToast(`Prediction failed: ${err.message}`, 'error');
       } finally {
         btnPredict.disabled = false;
-        btnPredict.innerHTML = '<span class="btn-icon">🔍</span> Evaluate Delay Probability (ML)';
+        btnPredict.innerHTML = `
+          <span class="btn-icon" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </span>
+          <span>Evaluate Delay Probability (ML)</span>
+        `;
       }
     });
   }
@@ -225,7 +233,7 @@ function initFormHandlers() {
       const payload = getFormData();
       const btnSubmit = document.getElementById('btnRunPrescription');
       btnSubmit.disabled = true;
-      btnSubmit.innerHTML = '<span class="btn-icon">⏳</span> Solving PuLP MILP...';
+      btnSubmit.innerHTML = '<span class="btn-spinner"></span> <span>Solving PuLP MILP...</span>';
       try {
         const res = await fetch(`${API_BASE}/prescribe`, {
           method: 'POST',
@@ -242,7 +250,14 @@ function initFormHandlers() {
         showToast(`Optimization failed: ${err.message}`, 'error');
       } finally {
         btnSubmit.disabled = false;
-        btnSubmit.innerHTML = '<span class="btn-icon">⚡</span> Solve Prescriptive Mitigation (PuLP)';
+        btnSubmit.innerHTML = `
+          <span class="btn-icon" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+          </span>
+          <span>Solve Prescriptive Mitigation (PuLP)</span>
+        `;
       }
     });
   }
@@ -415,12 +430,12 @@ function renderPrescription(data, inputPayload) {
       <td style="font-family: \'JetBrains Mono\', monospace;">${details.delivery_days} Days</td>
       <td>
         <span class="${meetsSla ? 'tag-sla-pass' : 'tag-sla-fail'}">
-          ${meetsSla ? '✔ Meets SLA' : `✖ Exceeds SLA (${details.delivery_days}d > ${inputPayload.max_delivery_days}d)`}
+          ${meetsSla ? 'Within SLA' : `Exceeds SLA (${details.delivery_days}d > ${inputPayload.max_delivery_days}d)`}
         </span>
       </td>
       <td>
         <span class="${meetsBudget ? 'tag-sla-pass' : 'tag-sla-fail'}">
-          ${meetsBudget ? '✔ Within Budget' : '✖ Exceeds Budget'}
+          ${meetsBudget ? 'Within Budget' : 'Exceeds Budget'}
         </span>
       </td>
     `;
@@ -489,8 +504,8 @@ async function loadAuditTrail() {
             <td><strong>${o.shipment_id}</strong></td>
             <td>${o.actual_delivery_days} Days</td>
             <td>$${Number(o.actual_cost).toLocaleString()}</td>
-            <td>${o.delay_occurred ? '⚠️ Yes' : '✔ No'}</td>
-            <td>${o.decision_effective ? '<span style="color: var(--emerald); font-weight: 600;">✔ Effective</span>' : '<span style="color: var(--rose); font-weight: 600;">✖ Failed</span>'}</td>
+            <td>${o.delay_occurred ? '<span class="tag-status-delayed">Delayed</span>' : '<span class="tag-status-ontime">On-Time</span>'}</td>
+            <td>${o.decision_effective ? '<span class="tag-status-effective">Effective (SLA Met)</span>' : '<span class="tag-status-failed">Ineffective</span>'}</td>
             <td>${o.feedback_notes || 'No feedback notes'}</td>
             <td style="font-size: 0.75rem;">${o.recorded_at || 'Just now'}</td>
           </tr>
@@ -538,7 +553,7 @@ function showToast(message, type = 'success') {
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.innerHTML = `
-    <span>${type === 'success' ? '✔' : '✖'}</span>
+    <span class="toast-dot ${type}"></span>
     <span>${message}</span>
   `;
   container.appendChild(toast);

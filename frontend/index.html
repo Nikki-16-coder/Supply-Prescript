@@ -15,7 +15,13 @@
   <!-- Top Navigation Bar -->
   <header class="navbar">
     <div class="brand-wrapper">
-      <div class="brand-icon">⚡</div>
+      <div class="brand-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+          <rect x="9" y="9" width="6" height="6"></rect>
+          <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"></path>
+        </svg>
+      </div>
       <div class="brand-info">
         <h1>SUPPLYPRESCRIPT</h1>
         <div class="brand-subtitle">Closed-Loop Prescriptive Analytics for Microchip Supply Chain</div>
@@ -33,7 +39,11 @@
   <!-- Business Context Flow Banner -->
   <section class="scenario-banner" aria-label="Semiconductor Supply Chain Architecture">
     <div class="scenario-title-area">
-      <div class="scenario-icon">🏭</div>
+      <div class="scenario-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 20h20M6 20V10l6 4V4l8 6v10H6z"/>
+        </svg>
+      </div>
       <div class="scenario-text">
         <strong>Enterprise Context: Semiconductor Fab to OEM Assembly Line</strong>
         <p>In-transit freight disruption risk inferred via XGBoost (trained on DataCo historical logistics benchmark) &bull; Prescriptive mitigation solved via PuLP MILP</p>
@@ -41,17 +51,17 @@
     </div>
     <div class="scenario-chain">
       <div class="chain-node supplier">
-        <span class="chain-badge-icon">🏭</span>
+        <span class="chain-dot"></span>
         <span>Semiconductor Foundry / Fab (Origin)</span>
       </div>
-      <div class="chain-arrow">➔</div>
+      <div class="chain-arrow">&rarr;</div>
       <div class="chain-node cargo">
-        <span class="chain-badge-icon">🌐</span>
+        <span class="chain-dot"></span>
         <span>Global Multi-Modal Freight (In-Transit Disruption Risk)</span>
       </div>
-      <div class="chain-arrow">➔</div>
+      <div class="chain-arrow">&rarr;</div>
       <div class="chain-node manufacturer">
-        <span class="chain-badge-icon">⚙️</span>
+        <span class="chain-dot"></span>
         <span>Electronics OEM Assembly Line (Final Delivery)</span>
       </div>
     </div>
@@ -66,7 +76,7 @@
         <span class="step-sub">Fab Allocation &amp; SLA Budget</span>
       </div>
     </div>
-    <div class="stepper-arrow">➔</div>
+    <div class="stepper-arrow">&rarr;</div>
     <div class="stepper-step" id="step2">
       <div class="step-num">02</div>
       <div class="step-content">
@@ -74,7 +84,7 @@
         <span class="step-sub">XGBoost Disruption Inference</span>
       </div>
     </div>
-    <div class="stepper-arrow">➔</div>
+    <div class="stepper-arrow">&rarr;</div>
     <div class="stepper-step" id="step3">
       <div class="step-num">03</div>
       <div class="step-content">
@@ -82,7 +92,7 @@
         <span class="step-sub">PuLP MILP Solver Synthesis</span>
       </div>
     </div>
-    <div class="stepper-arrow">➔</div>
+    <div class="stepper-arrow">&rarr;</div>
     <div class="stepper-step" id="step4">
       <div class="step-num">04</div>
       <div class="step-content">
@@ -90,7 +100,7 @@
         <span class="step-sub">SQLite Decision Write-Back</span>
       </div>
     </div>
-    <div class="stepper-arrow">➔</div>
+    <div class="stepper-arrow">&rarr;</div>
     <div class="stepper-step" id="step5">
       <div class="step-num">05</div>
       <div class="step-content">
@@ -106,13 +116,37 @@
     <!-- Tab Navigation -->
     <nav class="tabs-nav" aria-label="Dashboard Views">
       <button class="tab-btn active" data-tab="tab-console" id="tabConsoleBtn">
-        <span class="tab-icon">🧭</span> Prescriptive Decision Cockpit
+        <span class="tab-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="5" rx="1"></rect>
+            <rect x="14" y="12" width="7" height="9" rx="1"></rect>
+            <rect x="3" y="16" width="7" height="5" rx="1"></rect>
+          </svg>
+        </span>
+        <span>Prescriptive Decision Console</span>
       </button>
       <button class="tab-btn" data-tab="tab-audit" id="tabAuditBtn">
-        <span class="tab-icon">📋</span> Decision Audit Trail &amp; Governance KPIs
+        <span class="tab-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </span>
+        <span>Decision Audit Trail &amp; Governance KPIs</span>
       </button>
       <button class="tab-btn" data-tab="tab-ml" id="tabMlBtn">
-        <span class="tab-icon">📊</span> Predictive Risk Model &amp; Data Integrity
+        <span class="tab-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+        </span>
+        <span>Predictive Risk Model &amp; Data Integrity</span>
       </button>
     </nav>
 
@@ -127,7 +161,19 @@
           <div class="card">
             <div class="card-header">
               <div class="card-title-group">
-                <span class="card-icon">⚙️</span>
+                <span class="card-icon" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                  </svg>
+                </span>
                 <h2 class="card-title">Shipment Configuration &amp; Disruption Profile</h2>
               </div>
               <span class="card-badge cyan">Phase 01 &bull; Parameters</span>
@@ -138,16 +184,20 @@
               <label class="form-label">Operational Disruption Scenarios:</label>
               <div class="preset-bar">
                 <button type="button" class="preset-chip" id="presetStandard">
-                  <span class="preset-icon">✈️</span> Standard Air Disruption (7d SLA)
+                  <span class="preset-dot dot-standard"></span>
+                  <span>Standard Air Disruption (7d SLA)</span>
                 </button>
                 <button type="button" class="preset-chip" id="presetCritical">
-                  <span class="preset-icon">🚨</span> Critical Fab Line Expedite (3d SLA)
+                  <span class="preset-dot dot-critical"></span>
+                  <span>Critical Fab Line Expedite (3d SLA)</span>
                 </button>
                 <button type="button" class="preset-chip" id="presetBudget">
-                  <span class="preset-icon">💰</span> Constrained Logistics Budget ($10k)
+                  <span class="preset-dot dot-budget"></span>
+                  <span>Constrained Logistics Budget ($10k)</span>
                 </button>
                 <button type="button" class="preset-chip" id="presetInfeasible">
-                  <span class="preset-icon">⚠️</span> Supplier Allocation Deficit (Infeasible Scenario)
+                  <span class="preset-dot dot-infeasible"></span>
+                  <span>Supplier Allocation Deficit (Infeasible Scenario)</span>
                 </button>
               </div>
             </div>
@@ -155,7 +205,8 @@
             <form id="prescriptionForm">
               <!-- Microchip Business Constraints -->
               <div class="section-label">
-                <span>📐</span> Semiconductor Business &amp; SLA Constraints (PuLP Optimization)
+                <span class="section-indicator"></span>
+                <span>Semiconductor Business &amp; SLA Constraints (PuLP Optimization)</span>
               </div>
               
               <div class="form-grid-2">
@@ -205,7 +256,8 @@
 
               <!-- Logistics Profile (DataCo Features for ML) -->
               <div class="section-label">
-                <span>🚚</span> Logistics Transit Features (DataCo Historical Training Baseline)
+                <span class="section-indicator"></span>
+                <span>Logistics Transit Features (DataCo Historical Training Baseline)</span>
               </div>
               
               <div class="form-grid-2">
@@ -243,10 +295,21 @@
 
               <div class="btn-group">
                 <button type="button" class="btn btn-secondary" id="btnRunPrediction">
-                  <span class="btn-icon">🔍</span> Evaluate Delay Probability (ML)
+                  <span class="btn-icon" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                  </span>
+                  <span>Evaluate Delay Probability (ML)</span>
                 </button>
                 <button type="submit" class="btn btn-primary" id="btnRunPrescription">
-                  <span class="btn-icon">⚡</span> Solve Prescriptive Mitigation (PuLP)
+                  <span class="btn-icon" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                  </span>
+                  <span>Solve Prescriptive Mitigation (PuLP)</span>
                 </button>
               </div>
             </form>
@@ -260,7 +323,11 @@
           <div class="card" id="predictionCard">
             <div class="card-header">
               <div class="card-title-group">
-                <span class="card-icon">🧠</span>
+                <span class="card-icon" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                </span>
                 <h3 class="card-title">Predictive Disruption Intelligence</h3>
               </div>
               <span class="card-badge amber" id="mlStatusBadge">Awaiting Inference</span>
@@ -303,7 +370,15 @@
           <div class="card" id="optimizationCard">
             <div class="card-header">
               <div class="card-title-group">
-                <span class="card-icon">🎯</span>
+                <span class="card-icon" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="22" y1="12" x2="18" y2="12"></line>
+                    <line x1="6" y1="12" x2="2" y2="12"></line>
+                    <line x1="12" y1="6" x2="12" y2="2"></line>
+                    <line x1="12" y1="22" x2="12" y2="18"></line>
+                  </svg>
+                </span>
                 <h3 class="card-title">Prescriptive Mitigation &amp; Optimization Policy</h3>
               </div>
               <span class="card-badge emerald" id="optStatusBadge">Awaiting Optimization</span>
@@ -356,7 +431,8 @@
             <div class="closed-loop-box" id="managerDecisionBox">
               <div class="box-header-row">
                 <div class="section-label">
-                  <span>✍️</span> Closed-Loop Phase 4: Supply Chain Manager Authorization &amp; Write-Back
+                  <span class="section-indicator"></span>
+                  <span>Closed-Loop Phase 4: Supply Chain Manager Authorization &amp; Write-Back</span>
                 </div>
                 <span class="stage-pill">Phase 04</span>
               </div>
@@ -374,7 +450,14 @@
               </div>
 
               <button type="button" class="btn btn-success" id="btnRecordDecision">
-                <span class="btn-icon">💾</span> Commit Decision to Audit Ledger (SQLite)
+                <span class="btn-icon" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                </span>
+                <span>Commit Decision to Audit Ledger (SQLite)</span>
               </button>
             </div>
 
@@ -382,7 +465,8 @@
             <div class="closed-loop-box outcome-box" id="outcomeTrackingBox">
               <div class="box-header-row">
                 <div class="section-label">
-                  <span>📊</span> Closed-Loop Phase 5: Post-Delivery Outcome &amp; SLA Verification
+                  <span class="section-indicator"></span>
+                  <span>Closed-Loop Phase 5: Post-Delivery Outcome &amp; SLA Verification</span>
                 </div>
                 <span class="stage-pill">Phase 05</span>
               </div>
@@ -406,8 +490,8 @@
                 <div class="form-group">
                   <label class="form-label" for="decisionEffective">Operational Effectiveness Evaluation</label>
                   <select id="decisionEffective" class="form-select">
-                    <option value="1">Yes — Assembly Line Maintained Continuity (SLA Met)</option>
-                    <option value="0">No — Production Bottleneck or Budget Overrun</option>
+                    <option value="1">Yes &mdash; Assembly Line Maintained Continuity (SLA Met)</option>
+                    <option value="0">No &mdash; Production Bottleneck or Budget Overrun</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -416,7 +500,13 @@
                 </div>
               </div>
               <button type="button" class="btn btn-secondary" id="btnRecordOutcome">
-                <span class="btn-icon">📝</span> Log Post-Delivery Outcome &amp; Close Feedback Loop
+                <span class="btn-icon" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                  </svg>
+                </span>
+                <span>Log Post-Delivery Outcome &amp; Close Feedback Loop</span>
               </button>
             </div>
 
@@ -433,7 +523,13 @@
       <!-- KPI Metric Cards -->
       <div class="kpi-grid">
         <div class="kpi-card kpi-cyan">
-          <div class="kpi-icon">📦</div>
+          <div class="kpi-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+          </div>
           <div class="kpi-body">
             <div class="kpi-value" id="kpiTotalShipments">0</div>
             <div class="kpi-title">Consignments Monitored</div>
@@ -441,7 +537,13 @@
           </div>
         </div>
         <div class="kpi-card kpi-amber">
-          <div class="kpi-icon">⚠️</div>
+          <div class="kpi-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
           <div class="kpi-body">
             <div class="kpi-value" id="kpiAvgRisk">0%</div>
             <div class="kpi-title">Mean Disruption Probability</div>
@@ -449,7 +551,12 @@
           </div>
         </div>
         <div class="kpi-card kpi-indigo">
-          <div class="kpi-icon">🎯</div>
+          <div class="kpi-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
           <div class="kpi-body">
             <div class="kpi-value" id="kpiOptimalCount">0</div>
             <div class="kpi-title">Optimal Prescriptions Synthesized</div>
@@ -457,7 +564,12 @@
           </div>
         </div>
         <div class="kpi-card kpi-emerald">
-          <div class="kpi-icon">✅</div>
+          <div class="kpi-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
           <div class="kpi-body">
             <div class="kpi-value" id="kpiEffectiveness">100%</div>
             <div class="kpi-title">Mitigation Effectiveness</div>
@@ -470,11 +582,24 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title-group">
-            <span class="card-icon">🗃️</span>
+            <span class="card-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+              </svg>
+            </span>
             <h3 class="card-title">Persistent Prescriptive Decisions Ledger (SQLite Audit Trail)</h3>
           </div>
           <button type="button" class="btn btn-secondary" id="btnRefreshAudit" style="padding: 0.45rem 1rem; font-size: 0.82rem;">
-            <span class="btn-icon">🔄</span> Refresh Audit Trail
+            <span class="btn-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+            </span>
+            <span>Refresh Audit Trail</span>
           </button>
         </div>
 
@@ -507,7 +632,12 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title-group">
-            <span class="card-icon">📈</span>
+            <span class="card-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                <polyline points="17 6 23 6 23 12"></polyline>
+              </svg>
+            </span>
             <h3 class="card-title">Post-Delivery Realized Outcomes &amp; Feedback Verification</h3>
           </div>
         </div>
@@ -546,7 +676,13 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title-group">
-              <span class="card-icon">📊</span>
+              <span class="card-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+              </span>
               <h3 class="card-title">XGBoost Delay Risk Classifier &mdash; Validation Metrics</h3>
             </div>
             <span class="card-badge cyan">Held-Out Test Set</span>
@@ -575,7 +711,10 @@
             </div>
           </div>
 
-          <div class="section-label" style="margin-top: 1.5rem;">Held-Out Test Confusion Matrix (N = 36,104 Logistics Dispatches)</div>
+          <div class="section-label" style="margin-top: 1.5rem;">
+            <span class="section-indicator"></span>
+            <span>Held-Out Test Confusion Matrix (N = 36,104 Logistics Dispatches)</span>
+          </div>
           <div class="table-container">
             <table class="options-table matrix-table">
               <thead>
@@ -604,7 +743,11 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title-group">
-              <span class="card-icon">🛡️</span>
+              <span class="card-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+              </span>
               <h3 class="card-title">Data Governance &amp; Domain Decoupling Architecture</h3>
             </div>
             <span class="card-badge emerald">Zero Data Leakage</span>
@@ -613,7 +756,8 @@
           <div class="governance-content">
             <div class="gov-callout info">
               <div class="gov-callout-title">
-                <span>📌</span> Dataset Integrity &amp; Baseline Logistics Purpose
+                <span class="callout-indicator cyan"></span>
+                <span>Dataset Integrity &amp; Baseline Logistics Purpose</span>
               </div>
               <p>
                 We utilize the <strong>DataCo Supply Chain dataset (180,519 multimodal logistics records)</strong> strictly as historical logistics training data for freight delay probability estimation. <em>It is not labeled or presented as a microchip dataset</em>, but rather models historical freight courier transit times across geographic regions, customer segments, and transit modes.
@@ -622,7 +766,8 @@
 
             <div class="gov-callout alert">
               <div class="gov-callout-title">
-                <span>🛡️</span> Zero Data Leakage Protocol
+                <span class="callout-indicator amber"></span>
+                <span>Zero Data Leakage Protocol</span>
               </div>
               <p>
                 To strictly prevent target contamination, post-transit tracking attributes are completely excluded from predictive model training. Only pre-dispatch scheduling and transit configuration features are provided to the XGBoost inference pipeline:
@@ -648,7 +793,8 @@
 
             <div class="gov-callout success">
               <div class="gov-callout-title">
-                <span>⚡</span> Prescriptive Domain Decoupling
+                <span class="callout-indicator emerald"></span>
+                <span>Prescriptive Domain Decoupling</span>
               </div>
               <p>
                 Domain-specific semiconductor operations&mdash;such as fab wafer allocation, high-priority assembly line deadlines, component BOM quantities, and expedite budgets&mdash;are isolated within the <strong>PuLP MILP optimization engine and persistent SQLite audit trail</strong>, bridging generalized logistics intelligence to microchip manufacturing decisions without synthetic data contamination.
