@@ -11,6 +11,13 @@ Simulates full user journey from Frontend Dashboard against live FastAPI & SQLit
 8. Audit Trail & Analytics KPIs
 9. Infeasible / Constraint Boundary Cases
 10. ML Metrics Verification
+11. Input Validation & Business Constraint Robustness
+12. History & Listing Endpoints Contract
+13. Missing-Resource Handling (HTTP 404)
+14. Manager Decision Schema Validation (HTTP 422)
+15. Post-Delivery Outcome Schema Validation (HTTP 422)
+16. Explicit ML -> Prescription Handoff & Closed-Loop Decoupling
+17. ML Prediction to Prescriptive Optimization Integration Regression (Week 7-8 Reliability)
 """
 
 import os
@@ -525,6 +532,104 @@ def run_tests():
         and len(hist.get("decisions", [])) > 0
         and hist.get("decisions", [])[0].get("recommended_action") == "Air Freight",
         f"Linked Shipment: {hist.get('shipment', {}).get('shipment_id')}, Predictions: {len(hist.get('predictions', []))}, Decisions: {len(hist.get('decisions', []))}"
+    )
+
+    # 17. ML Prediction to Prescriptive Optimization Integration Regression (Week 7-8 Reliability)
+    print("\n--- 17. ML Prediction to Prescriptive Optimization Integration Regression ---")
+    regr_shipment = {
+        "shipment_id": "CHIP-REGR-ML-OPT-01",
+        "Days for shipment (scheduled)": 2,
+        "Shipping Mode": "Second Class",
+        "Order Item Quantity": 4000,
+        "Order Item Product Price": 45.0,
+        "Order Item Discount": 5.0,
+        "Order Item Discount Rate": 0.1,
+        "Customer Segment": "Corporate",
+        "Market": "Pacific Asia",
+        "Order Region": "Southeast Asia",
+        "Order Country": "Taiwan",
+        "Category Name": "Technology",
+        "Department Name": "Technology",
+        "Product Price": 45.0,
+        "simulated_delay_days": 10,
+    }
+
+    # Step 1: A valid shipment prediction can be generated
+    status_pred, pred_data = request_json("/predict", method="POST", data=regr_shipment)
+    assert_test(
+        "ML Regression: Valid Shipment Prediction Generated",
+        status_pred == 200 and pred_data.get("shipment_id") == "CHIP-REGR-ML-OPT-01",
+        f"Status={status_pred}, Shipment ID={pred_data.get('shipment_id')}"
+    )
+
+    # Step 2: The prediction contains the expected risk information
+    has_expected_risk = (
+        isinstance(pred_data.get("delay_probability"), (float, int))
+        and 0.0 <= pred_data.get("delay_probability") <= 1.0
+        and isinstance(pred_data.get("predicted_delay_days"), int)
+        and pred_data.get("predicted_delay_days") >= 0
+    )
+    assert_test(
+        "ML Regression: Prediction Contains Expected Risk Information",
+        has_expected_risk,
+        f"delay_probability={pred_data.get('delay_probability')}, predicted_delay_days={pred_data.get('predicted_delay_days')}"
+    )
+
+    # Step 3: The resulting shipment information can proceed into the prescriptive workflow
+    pred_delay_days = pred_data.get("predicted_delay_days", 10)
+    opt_payload = {
+        "budget": 20000.0,
+        "max_delivery_days": 7,
+        "required_quantity": 4000,
+        "supplier_capacity": 6000,
+        "predicted_delay_days": pred_delay_days,
+    }
+    status_opt, opt_data = request_json("/optimize", method="POST", data=opt_payload)
+    proceeds_to_prescriptive = (
+        status_opt == 200
+        and "options" in opt_data
+        and opt_data.get("options", {}).get("Accept Delay", {}).get("delivery_days") == pred_delay_days
+    )
+    assert_test(
+        "ML Regression: Resulting Shipment Info Proceeds into Prescriptive Workflow",
+        proceeds_to_prescriptive,
+        f"Status={status_opt}, Accept Delay Days Ingested={opt_data.get('options', {}).get('Accept Delay', {}).get('delivery_days')}"
+    )
+
+    # Step 4: The optimization returns a valid solver status/recommendation for the valid scenario
+    solver_valid = (
+        opt_data.get("status") == "Optimal"
+        and opt_data.get("recommended_action") in ["Air Freight", "Buffer Stock", "Split Shipment", "Accept Delay"]
+        and opt_data.get("chosen_option") is not None
+        and opt_data.get("chosen_option", {}).get("cost") is not None
+        and opt_data.get("chosen_option", {}).get("delivery_days") <= opt_payload["max_delivery_days"]
+    )
+    assert_test(
+        "ML Regression: Optimization Returns Valid Solver Status and Recommendation",
+        solver_valid,
+        f"Status={opt_data.get('status')}, Action={opt_data.get('recommended_action')}, Chosen Option={opt_data.get('chosen_option')}"
+    )
+
+    # Step 5: Unified Prescribe pipeline verification: Closed-loop endpoint connects ML risk to optimal recommendation
+    prescribe_payload = {
+        **regr_shipment,
+        "shipment_id": "CHIP-REGR-ML-OPT-02",
+        "budget": 20000.0,
+        "max_delivery_days": 7,
+        "required_quantity": 4000,
+        "supplier_capacity": 6000,
+    }
+    status_pres, pres_data = request_json("/prescribe", method="POST", data=prescribe_payload)
+    unified_valid = (
+        status_pres == 200
+        and pres_data.get("prediction", {}).get("predicted_delay_days") == pred_delay_days
+        and pres_data.get("optimization", {}).get("status") == "Optimal"
+        and pres_data.get("optimization", {}).get("recommended_action") is not None
+    )
+    assert_test(
+        "ML Regression: Unified Prescribe Pipeline Handoff and Solver Recommendation",
+        unified_valid,
+        f"Unified Action={pres_data.get('optimization', {}).get('recommended_action')}, Prediction={pres_data.get('prediction')}"
     )
 
     print("\n" + "=" * 70)
