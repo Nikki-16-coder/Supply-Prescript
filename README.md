@@ -41,16 +41,18 @@ Synthetic historical microchip shipment data
 ### Frontend
 - React
 
-## Team Structure
+## Project Development
 
-### Member 1
-ML & Predictive Analytics
+SupplyPrescript was independently designed, developed, tested, and integrated by Nikhil B. Rao.
 
-### Member 2
-Backend & Optimization
-
-### Member 3
-Frontend & Integration
+The project implementation was completed individually, including:
+- **Frontend Development**: Interactive enterprise dashboard, KPI analytics display, decision console, audit trail, and scenario controls.
+- **FastAPI Backend**: RESTful API service orchestrating prediction, optimization, and SQLite persistence.
+- **XGBoost ML Pipeline**: Data preprocessing, delay classification, duration regression, and model artifact management.
+- **PuLP Optimization**: Mixed-Integer Linear Programming (MILP) formulation solving constrained mitigation trade-offs.
+- **SQLite Database / Audit Trail**: Relational database schema supporting closed-loop tracking of shipments, predictions, manager decisions, and post-delivery outcome evaluations.
+- **Integration & Validation Testing**: End-to-end API integration tests, Pydantic schema validation, and ML reliability test suites.
+- **Documentation**: Project architectural documentation, API contracts, and usage guides.
 
 ## Prediction
 
