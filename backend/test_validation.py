@@ -4,6 +4,7 @@ Validates:
 1. Pydantic Schemas (valid inputs, zero/negative quantities, negative budgets, invalid SLA, negative disruption, empty shipment ID)
 2. Business constraint validation (quantity > capacity infeasibility in PuLP layer)
 3. PuLP Optimization parameter validation
+4. Optimization endpoint validation (rejection of invalid shipment constraints)
 """
 
 import os
@@ -13,7 +14,9 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pydantic import ValidationError
+from fastapi.testclient import TestClient
 
+from backend.main import app
 from backend.schemas import (
     ShipmentRequest,
     LogisticsPredictionRequest,
@@ -25,6 +28,10 @@ from backend.optimization import optimize_shipment
 
 
 class TestDay2Validation(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.client = TestClient(app)
 
     # ========================================================================
     # 1. Pydantic Schema Validation Tests
@@ -161,6 +168,32 @@ class TestDay2Validation(unittest.TestCase):
         self.assertEqual(result["status"], "Optimal")
         self.assertEqual(result["recommended_action"], "Air Freight")
         self.assertIsNotNone(result.get("chosen_option"))
+
+    # ========================================================================
+    # 3. Optimization Endpoint Validation Tests (FastAPI Layer)
+    # ========================================================================
+    def test_optimization_endpoint_rejects_invalid_constraint(self):
+        """
+        Verify that the /optimize endpoint cleanly rejects an invalid shipment constraint
+        where required quantity exceeds supplier capacity:
+        - The request is rejected cleanly without crashing (HTTP 200)
+        - The API returns the expected Infeasible validation/status response with explanatory message
+        - No successful optimization result or recommended action is returned
+        """
+        payload = {
+            "budget": 20000.0,
+            "max_delivery_days": 7,
+            "required_quantity": 8000,
+            "supplier_capacity": 5000,
+            "predicted_delay_days": 10,
+        }
+        response = self.client.post("/optimize", json=payload)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data.get("status"), "Infeasible")
+        self.assertIsNone(data.get("recommended_action"))
+        self.assertNotIn("chosen_option", data)
+        self.assertIn("exceeds supplier capacity", data.get("message", "").lower())
 
 
 if __name__ == "__main__":
