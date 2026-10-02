@@ -1,6 +1,7 @@
 /**
- * SupplyPrescript - Dashboard Application Controller
- * Closed-Loop Prescriptive Analytics for Microchip Supply Chain Decision Support
+ * SupplyPrescript — Swiss Minimalist Application Controller
+ * Inspired by Basel Ink / Swiss International Typographic Style
+ * Preserves 100% of existing functionality, endpoints, and data bindings.
  */
 
 const API_BASE = window.location.origin.startsWith('http') 
@@ -23,21 +24,19 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initHealthCheck() {
   const badge = document.getElementById('backendStatusBadge');
   const text = document.getElementById('backendStatusText');
+  const dot = badge ? badge.querySelector('.status-dot') : null;
+
   try {
     const res = await fetch(`${API_BASE}/`);
     if (res.ok) {
-      badge.style.background = 'rgba(16, 185, 129, 0.12)';
-      badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-      badge.style.color = '#10b981';
-      text.textContent = 'Operational (FastAPI Engine Live)';
+      if (text) text.textContent = 'Operational (FastAPI Live)';
+      if (dot) dot.classList.remove('offline');
     } else {
       throw new Error(`HTTP ${res.status}`);
     }
   } catch (err) {
-    badge.style.background = 'rgba(244, 63, 94, 0.12)';
-    badge.style.borderColor = 'rgba(244, 63, 94, 0.3)';
-    badge.style.color = '#f43f5e';
-    text.textContent = 'Backend Offline';
+    if (text) text.textContent = 'Backend Offline';
+    if (dot) dot.classList.add('offline');
   }
 }
 
@@ -58,28 +57,140 @@ function updateWorkflowStepper(activeStep) {
 }
 
 // ============================================================================
-// Tab Navigation
+// Website Tab Navigation System with Topbar Breadcrumb Sync
 // ============================================================================
-function initTabNavigation() {
+const TAB_BREADCRUMBS = {
+  'tab-home': 'OVERVIEW',
+  'tab-console': 'DECISION CONSOLE',
+  'tab-audit': 'AUDIT LEDGER',
+  'tab-ml': 'MODEL & INTEGRITY',
+  'tab-about': 'ABOUT'
+};
+
+function switchTab(targetId) {
+  // 1. Sync sidebar nav link active states
   const tabBtns = document.querySelectorAll('.tab-btn');
   tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabBtns.forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-
+    if (btn.getAttribute('data-tab') === targetId) {
       btn.classList.add('active');
-      const targetId = btn.getAttribute('data-tab');
-      const targetContent = document.getElementById(targetId);
-      if (targetContent) {
-        targetContent.classList.remove('hidden');
-      }
+    } else {
+      btn.classList.remove('active');
+    }
+  });
 
-      if (targetId === 'tab-audit') {
-        loadAuditTrail();
-      }
+  // 2. Switch visible canvas view
+  document.querySelectorAll('.tab-content').forEach(content => {
+    if (content.id === targetId) {
+      content.classList.remove('hidden');
+    } else {
+      content.classList.add('hidden');
+    }
+  });
+
+  // 3. Update topbar breadcrumb label
+  const breadcrumbEl = document.getElementById('topbarCurrentView');
+  if (breadcrumbEl && TAB_BREADCRUMBS[targetId]) {
+    breadcrumbEl.textContent = TAB_BREADCRUMBS[targetId];
+  }
+
+  // 4. Update topbar action button behavior
+  const topActionBtn = document.getElementById('navLaunchConsoleBtn');
+  if (topActionBtn) {
+    if (targetId === 'tab-console') {
+      topActionBtn.innerHTML = `
+        <span>Solve Mitigation</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+      `;
+    } else {
+      topActionBtn.innerHTML = `
+        <span>Open Console</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      `;
+    }
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Load audit trail dynamically when navigating to audit view
+  if (targetId === 'tab-audit') {
+    loadAuditTrail();
+  }
+}
+
+function initTabNavigation() {
+  // Sidebar Tab Buttons
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = btn.getAttribute('data-tab');
+      if (targetId) switchTab(targetId);
     });
   });
 
+  // Brand Logo Click -> Goes to Overview
+  const brandHomeLink = document.getElementById('brandHomeLink');
+  if (brandHomeLink) {
+    brandHomeLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      switchTab('tab-home');
+    });
+  }
+
+  // Topbar Action Button -> Triggers optimization in Console or switches to Console
+  const topActionBtn = document.getElementById('navLaunchConsoleBtn');
+  if (topActionBtn) {
+    topActionBtn.addEventListener('click', () => {
+      const consoleView = document.getElementById('tab-console');
+      const isConsoleActive = consoleView && !consoleView.classList.contains('hidden');
+      
+      if (isConsoleActive) {
+        // If already in console, trigger form submit
+        const form = document.getElementById('prescriptionForm');
+        if (form) form.requestSubmit();
+      } else {
+        // Otherwise switch to Console
+        switchTab('tab-console');
+      }
+    });
+  }
+
+  // Home Callout Button -> Switch to Console
+  const homeCalloutBtn = document.getElementById('homeCalloutBtn');
+  if (homeCalloutBtn) {
+    homeCalloutBtn.addEventListener('click', () => switchTab('tab-console'));
+  }
+
+  // Hero Section Action Buttons
+  const heroLaunchBtn = document.getElementById('heroLaunchBtn');
+  if (heroLaunchBtn) {
+    heroLaunchBtn.addEventListener('click', () => switchTab('tab-console'));
+  }
+
+  const heroAuditBtn = document.getElementById('heroAuditBtn');
+  if (heroAuditBtn) {
+    heroAuditBtn.addEventListener('click', () => switchTab('tab-audit'));
+  }
+
+  const heroMlBtn = document.getElementById('heroMlBtn');
+  if (heroMlBtn) {
+    heroMlBtn.addEventListener('click', () => switchTab('tab-ml'));
+  }
+
+  // Back to Homepage Buttons
+  document.querySelectorAll('.back-to-home').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      switchTab('tab-home');
+    });
+  });
+
+  // Audit Refresh Button
   const refreshBtn = document.getElementById('btnRefreshAudit');
   if (refreshBtn) {
     refreshBtn.addEventListener('click', loadAuditTrail);
@@ -157,7 +268,7 @@ function initPresetButtons() {
         document.getElementById('orderRegion').value = data.region;
 
         updateWorkflowStepper(1);
-        showToast(`Configured scenario: ${btn.textContent.trim()}`, 'success');
+        showToast(`Loaded: ${btn.textContent.trim()}`, 'success');
       });
     }
   });
@@ -178,7 +289,6 @@ function getFormData() {
     scheduled_days: parseInt(document.getElementById('scheduledDays').value, 10) || 2,
     simulated_delay_days: parseInt(document.getElementById('simulatedDelay').value, 10) || 14,
     order_region: document.getElementById('orderRegion').value.trim() || 'Southeast Asia',
-    // Dataset feature aliases matching ML model expectations
     'Days for shipment (scheduled)': parseInt(document.getElementById('scheduledDays').value, 10) || 2,
     'Shipping Mode': document.getElementById('shippingMode').value,
     'Order Item Quantity': parseInt(document.getElementById('requiredQuantity').value, 10) || 5000,
@@ -207,25 +317,20 @@ function initFormHandlers() {
         const data = await res.json();
         renderPrediction(data);
         updateWorkflowStepper(2);
-        showToast(`Disruption risk evaluated for consignment ${data.shipment_id}`, 'success');
+        showToast(`Disruption evaluated: ${data.shipment_id}`, 'success');
       } catch (err) {
         showToast(`Prediction failed: ${err.message}`, 'error');
       } finally {
         btnPredict.disabled = false;
         btnPredict.innerHTML = `
-          <span class="btn-icon" aria-hidden="true">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-          </span>
-          <span>Evaluate Delay Probability (ML)</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <span>Evaluate Risk (ML Only)</span>
         `;
       }
     });
   }
 
-  // 2. Full Closed-Loop Prescriptive Optimization
+  // 2. Full Closed-Loop Prescriptive Optimization (THE KEY ACTION)
   const form = document.getElementById('prescriptionForm');
   if (form) {
     form.addEventListener('submit', async (e) => {
@@ -245,17 +350,13 @@ function initFormHandlers() {
         currentPrescription = data;
         renderPrescription(data, payload);
         updateWorkflowStepper(3);
-        showToast(`Prescriptive mitigation synthesized: ${data.optimization.recommended_action || 'Infeasible'}`, 'success');
+        showToast(`Optimal policy: ${data.optimization.recommended_action || 'Infeasible'}`, 'success');
       } catch (err) {
         showToast(`Optimization failed: ${err.message}`, 'error');
       } finally {
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = `
-          <span class="btn-icon" aria-hidden="true">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-            </svg>
-          </span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
           <span>Solve Prescriptive Mitigation (PuLP)</span>
         `;
       }
@@ -336,7 +437,7 @@ function initFormHandlers() {
 }
 
 // ============================================================================
-// Renderers
+// Renderers (Clean Swiss Layout)
 // ============================================================================
 function renderPrediction(data) {
   const prob = data.delay_probability;
@@ -349,34 +450,25 @@ function renderPrediction(data) {
   const meterFill = document.getElementById('meterFill');
   const badge = document.getElementById('mlStatusBadge');
 
-  scoreText.textContent = `${pct}%`;
-  delayText.textContent = `${days} Days`;
-  meterFill.style.width = `${pct}%`;
-
-  scoreText.className = 'risk-score';
-  meterFill.className = 'meter-fill';
+  if (scoreText) scoreText.textContent = `${pct}%`;
+  if (delayText) delayText.textContent = `${days} Days`;
+  if (meterFill) meterFill.style.width = `${pct}%`;
 
   if (prob >= 0.6) {
-    scoreText.classList.add('high');
-    meterFill.classList.add('high');
-    levelLabel.textContent = 'HIGH DISRUPTION RISK';
-    badge.textContent = 'High Delay Risk';
-    badge.className = 'card-badge amber';
+    if (levelLabel) levelLabel.textContent = 'HIGH DISRUPTION RISK';
+    if (badge) badge.textContent = 'High Delay Risk';
   } else if (prob >= 0.4) {
-    scoreText.classList.add('medium');
-    meterFill.classList.add('medium');
-    levelLabel.textContent = 'MODERATE DISRUPTION RISK';
-    badge.textContent = 'Moderate Risk';
-    badge.className = 'card-badge cyan';
+    if (levelLabel) levelLabel.textContent = 'MODERATE DISRUPTION RISK';
+    if (badge) badge.textContent = 'Moderate Risk';
   } else {
-    scoreText.classList.add('low');
-    meterFill.classList.add('low');
-    levelLabel.textContent = 'ON-TIME DISPATCH PROBABLE';
-    badge.textContent = 'Low Risk';
-    badge.className = 'card-badge emerald';
+    if (levelLabel) levelLabel.textContent = 'ON-TIME DISPATCH PROBABLE';
+    if (badge) badge.textContent = 'Low Risk';
   }
 
-  document.getElementById('metaStatus').textContent = `${days > 0 ? days + 'd Delay' : 'On Schedule'}`;
+  const metaStatus = document.getElementById('metaStatus');
+  if (metaStatus) {
+    metaStatus.textContent = `${days > 0 ? days + 'd Delay' : 'On Schedule'}`;
+  }
 }
 
 function renderPrescription(data, inputPayload) {
@@ -391,26 +483,31 @@ function renderPrescription(data, inputPayload) {
   const tbody = document.getElementById('optionsTableBody');
   const pillGroup = document.getElementById('decisionPillGroup');
 
-  optBadge.textContent = opt.status;
-  if (opt.status === 'Optimal') {
-    optBadge.className = 'card-badge emerald';
-    actionName.textContent = opt.recommended_action;
-    statusMsg.textContent = `PuLP linear solver identified optimal mitigation satisfying budget ($${inputPayload.budget.toLocaleString()}) and assembly SLA (${inputPayload.max_delivery_days} days).`;
-
-    const chosen = opt.chosen_option || (opt.options && opt.options[opt.recommended_action]) || {};
-    costVal.textContent = `$${(chosen.cost || 0).toLocaleString()}`;
-    daysVal.textContent = `${chosen.delivery_days || 0} Days`;
-  } else {
-    optBadge.className = 'card-badge amber';
-    actionName.textContent = 'No Feasible Mitigation Found';
-    statusMsg.textContent = opt.message || 'Constraints violated (e.g., required quantity exceeds fab capacity or budget threshold exceeded).';
-    costVal.textContent = '$0';
-    daysVal.textContent = 'N/A';
+  if (optBadge) {
+    optBadge.textContent = opt.status;
   }
 
-  // Render Alternatives Table
-  tbody.innerHTML = '';
-  pillGroup.innerHTML = '';
+  if (opt.status === 'Optimal') {
+    if (actionName) actionName.textContent = opt.recommended_action;
+    if (statusMsg) {
+      statusMsg.textContent = `PuLP solver identified optimal mitigation satisfying budget ($${inputPayload.budget.toLocaleString()}) and SLA (${inputPayload.max_delivery_days} days).`;
+    }
+
+    const chosen = opt.chosen_option || (opt.options && opt.options[opt.recommended_action]) || {};
+    if (costVal) costVal.textContent = `$${(chosen.cost || 0).toLocaleString()}`;
+    if (daysVal) daysVal.textContent = `${chosen.delivery_days || 0} Days`;
+  } else {
+    if (actionName) actionName.textContent = 'No Feasible Mitigation Found';
+    if (statusMsg) {
+      statusMsg.textContent = opt.message || 'Constraints violated (e.g. required volume exceeds fab capacity or budget threshold exceeded).';
+    }
+    if (costVal) costVal.textContent = '$0';
+    if (daysVal) daysVal.textContent = 'N/A';
+  }
+
+  // Render Alternatives Table in Clean Swiss Style
+  if (tbody) tbody.innerHTML = '';
+  if (pillGroup) pillGroup.innerHTML = '';
 
   const options = opt.options || {};
   Object.entries(options).forEach(([name, details]) => {
@@ -418,38 +515,42 @@ function renderPrescription(data, inputPayload) {
     const meetsSla = details.delivery_days <= inputPayload.max_delivery_days;
     const meetsBudget = details.cost <= inputPayload.budget;
 
-    const row = document.createElement('tr');
-    if (isSelected) row.classList.add('selected-row');
+    if (tbody) {
+      const row = document.createElement('tr');
+      if (isSelected) row.classList.add('selected-row');
 
-    row.innerHTML = `
-      <td>
-        <strong>${name}</strong>
-        ${isSelected ? '<span style="font-size: 0.72rem; color: var(--emerald); margin-left: 0.4rem; font-weight: 700;">[OPTIMAL SOLVER CHOICE]</span>' : ''}
-      </td>
-      <td style="color: #38bdf8; font-weight: 700; font-family: \'JetBrains Mono\', monospace;">$${details.cost.toLocaleString()}</td>
-      <td style="font-family: \'JetBrains Mono\', monospace;">${details.delivery_days} Days</td>
-      <td>
-        <span class="${meetsSla ? 'tag-sla-pass' : 'tag-sla-fail'}">
-          ${meetsSla ? 'Within SLA' : `Exceeds SLA (${details.delivery_days}d > ${inputPayload.max_delivery_days}d)`}
-        </span>
-      </td>
-      <td>
-        <span class="${meetsBudget ? 'tag-sla-pass' : 'tag-sla-fail'}">
-          ${meetsBudget ? 'Within Budget' : 'Exceeds Budget'}
-        </span>
-      </td>
-    `;
-    tbody.appendChild(row);
+      row.innerHTML = `
+        <td>
+          <strong>${name}</strong>
+          ${isSelected ? '<span style="font-size: 10px; color: #1d4ed8; background: #dbeafe; padding: 2px 6px; border-radius: 2px; margin-left: 6px; font-weight: 700;">OPTIMAL</span>' : ''}
+        </td>
+        <td class="mono" style="font-weight: 600;">$${details.cost.toLocaleString()}</td>
+        <td class="mono">${details.delivery_days} Days</td>
+        <td>
+          <span class="${meetsSla ? 'tag-sla-pass' : 'tag-sla-fail'}">
+            ${meetsSla ? 'Within SLA' : `Exceeds SLA (${details.delivery_days}d > ${inputPayload.max_delivery_days}d)`}
+          </span>
+        </td>
+        <td>
+          <span class="${meetsBudget ? 'tag-sla-pass' : 'tag-sla-fail'}">
+            ${meetsBudget ? 'Within Budget' : 'Exceeds Budget'}
+          </span>
+        </td>
+      `;
+      tbody.appendChild(row);
+    }
 
     // Decision Pills
-    const radioId = `choice_${name.replace(/\s+/g, '_')}`;
-    const pillWrapper = document.createElement('div');
-    pillWrapper.style.display = 'contents';
-    pillWrapper.innerHTML = `
-      <input type="radio" id="${radioId}" name="manager_choice" value="${name}" class="radio-pill-input" ${isSelected ? 'checked' : ''}>
-      <label for="${radioId}" class="radio-pill-label">${name}</label>
-    `;
-    pillGroup.appendChild(pillWrapper);
+    if (pillGroup) {
+      const radioId = `choice_${name.replace(/\s+/g, '_')}`;
+      const pillWrapper = document.createElement('div');
+      pillWrapper.style.display = 'contents';
+      pillWrapper.innerHTML = `
+        <input type="radio" id="${radioId}" name="manager_choice" value="${name}" class="radio-pill-input" ${isSelected ? 'checked' : ''}>
+        <label for="${radioId}" class="radio-pill-label">${name}</label>
+      `;
+      pillGroup.appendChild(pillWrapper);
+    }
   });
 }
 
@@ -466,50 +567,59 @@ async function loadAuditTrail() {
 
     if (analyticsRes.ok) {
       const a = await analyticsRes.json();
-      document.getElementById('kpiTotalShipments').textContent = a.total_shipments_tracked || 0;
-      document.getElementById('kpiAvgRisk').textContent = `${Math.round((a.average_delay_probability || 0) * 100)}%`;
-      document.getElementById('kpiOptimalCount').textContent = a.optimal_solutions_found || 0;
-      document.getElementById('kpiEffectiveness').textContent = `${a.decision_effectiveness_pct || 100}%`;
+      const kpiTotal = document.getElementById('kpiTotalShipments');
+      const kpiRisk = document.getElementById('kpiAvgRisk');
+      const kpiOpt = document.getElementById('kpiOptimalCount');
+      const kpiEff = document.getElementById('kpiEffectiveness');
+
+      if (kpiTotal) kpiTotal.textContent = a.total_shipments_tracked || 0;
+      if (kpiRisk) kpiRisk.textContent = `${Math.round((a.average_delay_probability || 0) * 100)}%`;
+      if (kpiOpt) kpiOpt.textContent = a.optimal_solutions_found || 0;
+      if (kpiEff) kpiEff.textContent = `${a.decision_effectiveness_pct || 100}%`;
     }
 
     if (decisionsRes.ok) {
       const decisions = await decisionsRes.json();
       const tbody = document.getElementById('decisionsTableBody');
-      if (decisions.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="table-empty-placeholder">No prescriptive decisions recorded in SQLite ledger yet.</td></tr>`;
-      } else {
-        tbody.innerHTML = decisions.map(d => `
-          <tr>
-            <td><strong>${d.shipment_id}</strong></td>
-            <td>${d.required_quantity}</td>
-            <td>$${Number(d.budget).toLocaleString()}</td>
-            <td>${d.max_delivery_days}d</td>
-            <td style="color: var(--cyan); font-weight: 600;">${d.recommended_action || 'None'}</td>
-            <td style="color: var(--emerald); font-weight: 600;">${d.manager_decision || 'Pending'}</td>
-            <td><span class="card-badge ${d.optimization_status === 'Optimal' ? 'emerald' : 'amber'}">${d.optimization_status}</span></td>
-            <td style="font-size: 0.75rem;">${d.created_at || 'Just now'}</td>
-          </tr>
-        `).join('');
+      if (tbody) {
+        if (decisions.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">No prescriptive decisions recorded in SQLite ledger yet.</td></tr>`;
+        } else {
+          tbody.innerHTML = decisions.map(d => `
+            <tr>
+              <td><strong>${d.shipment_id}</strong></td>
+              <td class="mono">${d.required_quantity}</td>
+              <td class="mono">$${Number(d.budget).toLocaleString()}</td>
+              <td class="mono">${d.max_delivery_days}d</td>
+              <td>${d.recommended_action || 'None'}</td>
+              <td><strong>${d.manager_decision || 'Pending'}</strong></td>
+              <td><span class="swiss-badge">${d.optimization_status}</span></td>
+              <td class="mono" style="font-size: 11.5px; color: var(--text-muted);">${d.created_at || 'Just now'}</td>
+            </tr>
+          `).join('');
+        }
       }
     }
 
     if (outcomesRes.ok) {
       const outcomes = await outcomesRes.json();
       const tbody = document.getElementById('outcomesTableBody');
-      if (outcomes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="table-empty-placeholder">No post-delivery outcomes verified yet.</td></tr>`;
-      } else {
-        tbody.innerHTML = outcomes.map(o => `
-          <tr>
-            <td><strong>${o.shipment_id}</strong></td>
-            <td>${o.actual_delivery_days} Days</td>
-            <td>$${Number(o.actual_cost).toLocaleString()}</td>
-            <td>${o.delay_occurred ? '<span class="tag-status-delayed">Delayed</span>' : '<span class="tag-status-ontime">On-Time</span>'}</td>
-            <td>${o.decision_effective ? '<span class="tag-status-effective">Effective (SLA Met)</span>' : '<span class="tag-status-failed">Ineffective</span>'}</td>
-            <td>${o.feedback_notes || 'No feedback notes'}</td>
-            <td style="font-size: 0.75rem;">${o.recorded_at || 'Just now'}</td>
-          </tr>
-        `).join('');
+      if (tbody) {
+        if (outcomes.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No outcomes logged yet.</td></tr>`;
+        } else {
+          tbody.innerHTML = outcomes.map(o => `
+            <tr>
+              <td><strong>${o.shipment_id}</strong></td>
+              <td class="mono">${o.actual_delivery_days} Days</td>
+              <td class="mono">$${Number(o.actual_cost).toLocaleString()}</td>
+              <td>${o.delay_occurred ? '<span class="tag-sla-fail">Delayed</span>' : '<span class="tag-sla-pass">On-Time</span>'}</td>
+              <td>${o.decision_effective ? '<span class="tag-sla-pass">Effective</span>' : '<span class="tag-sla-fail">Ineffective</span>'}</td>
+              <td>${o.feedback_notes || 'No feedback notes'}</td>
+              <td class="mono" style="font-size: 11.5px; color: var(--text-muted);">${o.recorded_at || 'Just now'}</td>
+            </tr>
+          `).join('');
+        }
       }
     }
   } catch (err) {
@@ -525,18 +635,15 @@ async function loadMlMetrics() {
     const res = await fetch(`${API_BASE}/ml/metrics`);
     if (res.ok) {
       const data = await res.json();
-      if (data.accuracy) {
-        document.getElementById('mlMetricAcc').textContent = `${(data.accuracy * 100).toFixed(2)}%`;
-      }
-      if (data.precision) {
-        document.getElementById('mlMetricPrec').textContent = `${(data.precision * 100).toFixed(2)}%`;
-      }
-      if (data.f1_score) {
-        document.getElementById('mlMetricF1').textContent = data.f1_score.toFixed(4);
-      }
-      if (data.roc_auc) {
-        document.getElementById('mlMetricAuc').textContent = data.roc_auc.toFixed(4);
-      }
+      const acc = document.getElementById('mlMetricAcc');
+      const prec = document.getElementById('mlMetricPrec');
+      const f1 = document.getElementById('mlMetricF1');
+      const auc = document.getElementById('mlMetricAuc');
+
+      if (acc && data.accuracy) acc.textContent = `${(data.accuracy * 100).toFixed(2)}%`;
+      if (prec && data.precision) prec.textContent = `${(data.precision * 100).toFixed(2)}%`;
+      if (f1 && data.f1_score) f1.textContent = data.f1_score.toFixed(4);
+      if (auc && data.roc_auc) auc.textContent = data.roc_auc.toFixed(4);
     }
   } catch (err) {
     console.warn('Could not load ML metrics:', err);
@@ -544,7 +651,7 @@ async function loadMlMetrics() {
 }
 
 // ============================================================================
-// Toast Notification Utility
+// Toast Notification Utility (Clean Swiss Minimalist)
 // ============================================================================
 function showToast(message, type = 'success') {
   const container = document.getElementById('toastContainer');
@@ -553,14 +660,14 @@ function showToast(message, type = 'success') {
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.innerHTML = `
-    <span class="toast-dot ${type}"></span>
+    <span class="toast-dot"></span>
     <span>${message}</span>
   `;
   container.appendChild(toast);
 
   setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateY(10px)';
-    setTimeout(() => toast.remove(), 300);
-  }, 3500);
+    toast.style.transform = 'translateY(6px)';
+    setTimeout(() => toast.remove(), 180);
+  }, 2600);
 }
