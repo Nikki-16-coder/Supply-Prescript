@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — SupplyPrescript Enterprise Decision Support</title>
+  <meta name="description" content="Secure role-based authentication portal for SupplyPrescript closed-loop prescriptive analytics platform for microchip supply chains.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/dashboard/logo.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/dashboard/style.css">
+  <style>
+    /* Critical layout and component styles */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    .hidden {
+      display: none !important;
+    }
+    #eyeIconHide.hidden,
+    #eyeIconShow.hidden,
+    #loginSpinner.hidden,
+    .spinner-inline.hidden {
+      display: none !important;
+    }
+
+    body.split-login-body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #0b1120;
+      color: #1e293b;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .split-login-container {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* Left Branding Panel: Minimal, Clean, Professional */
+    .login-brand-panel {
+      position: relative;
+      flex: 1.1;
+      background: radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
+                  radial-gradient(circle at 85% 75%, rgba(37, 99, 235, 0.15) 0%, transparent 50%),
+                  linear-gradient(145deg, #070d1d 0%, #0f172a 60%, #161938 100%);
+      color: #ffffff;
+      padding: 64px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .brand-panel-glow {
+      position: absolute;
+      top: -150px;
+      left: -150px;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .brand-panel-inner {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      max-width: 560px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .brand-panel-header {
+      margin-bottom: 40px;
+    }
+
+    .brand-badge-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-panel-logo {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(37, 99, 235, 0.35));
+    }
+
+    .brand-text-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-panel-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+
+    .brand-panel-tagline {
+      font-size: 11px;
+      font-weight: 600;
+      color: #93c5fd;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .brand-hero-content {
+      margin-bottom: 0;
+    }
+
+    .brand-hero-heading {
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      color: #f8fafc;
+      margin: 0 0 18px 0;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-hero-description {
+      font-size: 15px;
+      line-height: 1.65;
+      color: #94a3b8;
+      margin: 0;
+    }
+
+    /* Right Panel: Centered without clipping */
+    .login-form-panel {
+      flex: 1;
+      background-color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 32px;
+      min-height: 100vh;
+      overflow-y: auto;
+    }
+
+    .form-panel-inner {
+      width: 100%;
+      max-width: 440px;
+      margin: auto 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login-auth-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 36px 32px;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 0 1px rgba(15, 23, 42, 0.05);
+    }
+
+    .auth-card-header {
+      margin-bottom: 24px;
+    }
+
+    .auth-card-title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: #0f172a;
+      margin: 0 0 8px 0;
+      line-height: 1.25;
+    }
+
+    .auth-card-subtitle {
+      font-size: 13.5px;
+      color: #64748b;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* Alert Banner */
+    .auth-alert-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background-color: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      color: #991b1b;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    .alert-icon-box {
+      color: #dc2626;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .alert-text-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .alert-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #991b1b;
+    }
+
+    .alert-message {
+      font-size: 12px;
+      line-height: 1.45;
+      color: #b91c1c;
+    }
+
+    .alert-close-btn {
+      background: transparent;
+      border: none;
+      font-size: 18px;
+      line-height: 1;
+      color: #991b1b;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+
+    /* Form Fields */
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .field-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .required-indicator {
+      color: #dc2626;
+      margin-left: 2px;
+    }
+
+    .field-input-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-prefix-icon {
+      position: absolute;
+      left: 14px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .field-input {
+      width: 100%;
+      height: 42px;
+      padding: 0 14px 0 42px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13.5px;
+      color: #0f172a;
+      font-family: inherit;
+      transition: all 0.15s ease;
+    }
+
+    .field-input::placeholder {
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    .field-input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .field-input.input-error {
+      border-color: #ef4444 !important;
+      background-color: #fffbfa;
+    }
+
+    .field-input-password {
+      padding-right: 42px;
+    }
+
+    .field-toggle-btn {
+      position: absolute;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: color 0.15s ease;
+    }
+
+    .field-toggle-btn:hover {
+      color: #0f172a;
+    }
+
+    .field-validation-msg {
+      font-size: 11px;
+      font-weight: 500;
+      color: #dc2626;
+      min-height: 14px;
+    }
+
+    /* Helper Row: Forgot Password Link */
+    .auth-helper-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: -4px;
+      margin-bottom: 4px;
+    }
+
+    .auth-text-link {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #2563eb;
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .auth-text-link:hover {
+      color: #1d4ed8;
+      text-decoration: underline;
+    }
+
+    /* Primary Submit Button */
+    .btn-auth-primary {
+      width: 100%;
+      height: 44px;
+      background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+      color: #ffffff;
+      border: 1px solid #1d4ed8;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+      transition: all 0.15s ease;
+      margin-top: 4px;
+    }
+
+    .btn-auth-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn-auth-primary:disabled {
+      opacity: 0.85;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* SSO Section: Divider & Buttons */
+    .auth-sso-section {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .auth-sso-divider {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .auth-sso-divider::before,
+    .auth-sso-divider::after {
+      content: "";
+      flex: 1;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .auth-sso-divider span {
+      padding: 0 10px;
+    }
+
+    /* Side-by-side Outlined SSO Buttons */
+    .sso-buttons-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .btn-sso {
+      height: 42px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 0 14px;
+      transition: all 0.15s ease-in-out;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      font-family: inherit;
+      box-sizing: border-box;
+      text-decoration: none;
+      width: 100%;
+    }
+
+    .btn-sso:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #0f172a;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+      transform: translateY(-1px);
+    }
+
+    .btn-sso:active {
+      transform: translateY(0);
+    }
+
+    .btn-sso svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      display: block;
+    }
+
+    .back-to-login {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      text-decoration: none;
+      margin-top: 14px;
+      transition: color 0.15s ease;
+    }
+
+    .back-to-login:hover {
+      color: #0f172a;
+    }
+
+    .form-panel-minimal-footer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 11.5px;
+      color: #94a3b8;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 860px) {
+      .split-login-container {
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      .login-brand-panel {
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 40px 24px 32px;
+        flex: none;
+        justify-content: flex-start;
+      }
+      .brand-hero-heading {
+        font-size: 28px;
+      }
+      .login-form-panel {
+        padding: 32px 16px;
+        min-height: auto;
+        flex: 1;
+      }
+      .form-panel-inner {
+        margin: 0 auto;
+      }
+      .login-auth-card {
+        padding: 28px 20px;
+      }
+    }
+  </style>
+</head>
+<body class="split-login-body">
+
+  <div class="split-login-container">
+    
+    <!-- ======================================================================
+         LEFT PANEL: ENTERPRISE BRANDING (MINIMAL & PROFESSIONAL)
+         ====================================================================== -->
+    <aside class="login-brand-panel" aria-label="SupplyPrescript Platform Information">
+      <div class="brand-panel-glow"></div>
+      
+      <div class="brand-panel-inner">
+        <!-- Brand Header -->
+        <div class="brand-panel-header">
+          <a href="/login" class="brand-badge-link" title="SupplyPrescript Decision Support Platform">
+            <img src="/dashboard/logo.png" alt="SupplyPrescript Logo" class="brand-panel-logo">
+            <div class="brand-text-group">
+              <span class="brand-panel-title">SupplyPrescript</span>
+              <span class="brand-panel-tagline">Decision Intelligence</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Hero Mission Statement -->
+        <div class="brand-hero-content">
+          <h1 class="brand-hero-heading">
+            Predict Disruption.<br>
+            <span class="gradient-text">Prescribe Recovery.</span>
+          </h1>
+          <p class="brand-hero-description">
+            Closed-loop prescriptive analytics combining pre-transit machine learning delay classification 
+            with Mixed-Integer Linear Programming (MILP) to formulate mathematically optimal supply chain recovery actions.
+          </p>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- ======================================================================
+         RIGHT PANEL: MINIMALIST SAAS AUTHENTICATION EXPERIENCE
+         ====================================================================== -->
+    <main class="login-form-panel" id="mainContent" role="main">
+      <div class="form-panel-inner">
+
+        <!-- Card Container -->
+        <div class="login-auth-card">
+          
+          <!-- Dynamic Alert Banner -->
+          <div id="loginAlert" class="auth-alert-banner hidden" role="alert" aria-live="assertive">
+            <div class="alert-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <div class="alert-text-content">
+              <span id="loginAlertTitle" class="alert-title">Authentication Failed</span>
+              <span id="loginAlertMessage" class="alert-message">Invalid credentials. Please verify your username/email and password.</span>
+            </div>
+            <button type="button" class="alert-close-btn" id="btnDismissAlert" aria-label="Dismiss alert">&times;</button>
+          </div>
+
+          <!-- ================================================================
+               VIEW 1: SIGN IN FORM
+               ================================================================ -->
+          <div id="signInView">
+            
+            <div class="auth-card-header">
+              <h2 class="auth-card-title">Sign in to Platform</h2>
+              <p class="auth-card-subtitle">
+                Enter your credentials to access your workspace.
+              </p>
+            </div>
+
+            <form id="loginForm" class="auth-form" novalidate autocomplete="on">
+              
+              <!-- Field 1: Corporate Username or Email -->
+              <div class="form-field-group" id="groupUsername">
+                <label for="usernameOrEmail" class="field-label">
+                  <span>Username or Email</span>
+                  <span class="required-indicator">*</span>
+                </label>
+                <div class="field-input-box">
+                  <span class="input-prefix-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                  </span>
+                  <input 
+                    type="text" 
+                    id="usernameOrEmail" 
+                    name="username_or_email" 
+                    class="field-input" 
+                    placeholder="Enter your username or email" 
+                    autocomplete="username"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    autofocus
+                    required
+                  >
+                </div>
+                <span class="field-validation-msg" id="usernameError"></span>
+              </div>
+
+              <!-- Field 2: Password with Show/Hide Toggle -->
+              <div class="form-field-group" id="groupPassword">
+                <div class="field-label-row">
+                  <label for="password" class="field-label">
+                    <span>Password</span>
+                    <span class="required-indicator">*</span>
+                  </label>
+                </div>
+                <div class="field-input-box">
+                  <span class="input-prefix-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                  </span>
+                  <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    class="field-input field-input-password" 
+                    placeholder="Enter your password" 
+                    autocomplete="current-password"
+                    required
+                  >
+                  <button 
+                    type="button" 
+                    id="btnTogglePassword" 
+                    class="field-toggle-btn" 
+                    aria-label="Toggle password visibility"
+                    title="Show / Hide password"
+                  >
+                    <svg id="eyeIconShow" class="eye-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <svg id="eyeIconHide" class="eye-icon hidden" style="display: none;" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  </button>
+                </div>
+                <span class="field-validation-msg" id="passwordError"></span>
+              </div>
+
+              <!-- Forgot Password Link Row -->
+              <div class="auth-helper-row">
+                <a href="#forgot-password" id="linkForgotPassword" class="auth-text-link">Forgot password?</a>
+              </div>
+
+              <!-- Primary Submit Button -->
+              <button type="submit" id="btnSubmitLogin" class="btn-auth-primary">
+                <span id="btnSubmitText">Sign In</span>
+                <svg id="btnSubmitIcon" class="btn-arrow-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+                <span id="loginSpinner" class="spinner-inline hidden" style="display: none;" aria-hidden="true"></span>
+              </button>
+
+            </form>
+
+            <!-- ================================================================
+                 ENTERPRISE SINGLE SIGN-ON (OAuth 2.0)
+                 ================================================================ -->
+            <div class="auth-sso-section">
+              <div class="auth-sso-divider">
+                <span>or continue with</span>
+              </div>
+              
+              <div class="sso-buttons-row">
+                <!-- Google Button -->
+                <button type="button" id="btnGoogleSso" class="btn-sso" title="Sign in with Google">
+                  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.94H1.28v3.13C3.33 21.43 7.39 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.59H1.28C.46 8.21 0 10.05 0 12s.46 3.79 1.28 5.41l4-3.13z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.39 0 3.33 2.57 1.28 6.59l4 3.13c.95-2.84 3.6-4.97 6.72-4.97z"/>
+                  </svg>
+                  <span>Google</span>
+                </button>
+
+                <!-- Facebook Button -->
+                <button type="button" id="btnFacebookSso" class="btn-sso" title="Sign in with Facebook">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2" aria-hidden="true">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                  <span>Facebook</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ================================================================
+               VIEW 2: FORGOT PASSWORD REQUEST FORM
+               ================================================================ -->
+          <div id="forgotPasswordView" class="hidden">
+            
+            <div class="auth-card-header">
+              <h2 class="auth-card-title">Reset Password</h2>
+              <p class="auth-card-subtitle">
+                Enter your registered corporate email address and we'll send a link to reset your password.
+              </p>
+            </div>
+
+            <form id="forgotPasswordForm" class="auth-form" novalidate>
+              
+              <div class="form-field-group">
+                <label for="forgotEmail" class="field-label">
+                  <span>Registered Email</span>
+                  <span class="required-indicator">*</span>
+                </label>
+                <div class="field-input-box">
+                  <span class="input-prefix-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                      <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                  </span>
+                  <input 
+                    type="email" 
+                    id="forgotEmail" 
+                    name="email" 
+                    class="field-input" 
+                    placeholder="e.g. analyst@supplyprescript.corp" 
+                    autocomplete="email"
+                    required
+                  >
+                </div>
+                <span class="field-validation-msg" id="forgotEmailError"></span>
+              </div>
+
+              <button type="submit" id="btnSubmitForgot" class="btn-auth-primary">
+                <span id="btnSubmitForgotText">Send Reset Link</span>
+                <span id="forgotSpinner" class="spinner-inline hidden" style="display: none;" aria-hidden="true"></span>
+              </button>
+
+              <div style="text-align: center; margin-top: 10px;">
+                <a href="#login" id="linkBackToLogin" class="back-to-login">
+                  &larr; Back to Sign In
+                </a>
+              </div>
+
+            </form>
+
+          </div>
+
+        </div>
+
+        <!-- Minimalist Panel Footer -->
+        <footer class="form-panel-minimal-footer">
+          SupplyPrescript &copy; 2026. All rights reserved.
+        </footer>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ======================================================================
+       ROBUST AUTHENTICATION & OAUTH CONTROLLER
+       ====================================================================== -->
+  <script>
+    function resolveApiBase() {
+      if (window.location.protocol === 'file:' || !window.location.origin.startsWith('http')) {
+        return 'http://127.0.0.1:8000';
+      }
+      if (window.location.port === '8000' || window.location.port === '') {
+        return window.location.origin;
+      }
+      return `${window.location.protocol}//${window.location.hostname}:8000`;
+    }
+
+    const API_BASE = resolveApiBase();
+    let isSubmitting = false;
+
+    function initAll() {
+      handleOAuthRedirectParameters();
+      initOAuthConfig();
+      initShowHidePassword();
+      initRealtimeErrorClearing();
+      initLoginForm();
+      initForgotPasswordView();
+      checkExistingSession();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initAll);
+    } else {
+      initAll();
+    }
+
+    // Handle OAuth Callback Parameters & Fragment Tokens
+    function handleOAuthRedirectParameters() {
+      if (window.location.hash && window.location.hash.includes('token=')) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const token = hashParams.get('token');
+        if (token) {
+          localStorage.setItem('supplyprescript_token', token);
+          history.replaceState(null, document.title, window.location.pathname + window.location.search);
+        }
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const oauthError = urlParams.get('error');
+      if (oauthError) {
+        showAlert(decodeURIComponent(oauthError), 'Authentication Error');
+        const newSearch = new URLSearchParams(window.location.search);
+        newSearch.delete('error');
+        const searchStr = newSearch.toString() ? `?${newSearch.toString()}` : '';
+        history.replaceState(null, document.title, window.location.pathname + searchStr);
+      }
+    }
+
+    // Check if user is already authenticated
+    async function checkExistingSession() {
+      try {
+        const token = localStorage.getItem('supplyprescript_token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const res = await fetch(`${API_BASE}/auth/me`, {
+          credentials: 'include',
+          headers: headers
+        });
+        if (res.ok) {
+          const user = await res.json();
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectParam = urlParams.get('redirect');
+
+          if (redirectParam && redirectParam.startsWith('/')) {
+            if (redirectParam === '/admin' && user.role !== 'admin') {
+              window.location.href = '/dashboard?tab=console';
+            } else {
+              window.location.href = redirectParam;
+            }
+            return;
+          }
+
+          if (user.role === 'admin') {
+            window.location.href = '/admin';
+          } else if (user.role === 'manager') {
+            window.location.href = '/dashboard?tab=console';
+          } else {
+            window.location.href = '/dashboard?tab=home';
+          }
+        }
+      } catch (e) {
+        // Not authenticated, stay on login page
+      }
+    }
+
+    // Toggle Password Visibility
+    function initShowHidePassword() {
+      const btn = document.getElementById('btnTogglePassword');
+      const input = document.getElementById('password');
+      const showIcon = document.getElementById('eyeIconShow');
+      const hideIcon = document.getElementById('eyeIconHide');
+
+      if (!btn || !input || !showIcon || !hideIcon) return;
+
+      function updateIcon(showPassword) {
+        if (showPassword) {
+          input.type = 'text';
+          showIcon.style.display = 'none';
+          showIcon.classList.add('hidden');
+          hideIcon.style.display = 'block';
+          hideIcon.classList.remove('hidden');
+          btn.setAttribute('aria-label', 'Hide password');
+        } else {
+          input.type = 'password';
+          showIcon.style.display = 'block';
+          showIcon.classList.remove('hidden');
+          hideIcon.style.display = 'none';
+          hideIcon.classList.add('hidden');
+          btn.setAttribute('aria-label', 'Show password');
+        }
+      }
+
+      updateIcon(false);
+
+      btn.onclick = (e) => {
+        e.preventDefault();
+        const shouldShow = input.type === 'password';
+        updateIcon(shouldShow);
+      };
+    }
+
+    // Google & Facebook OAuth Buttons Configuration
+    function initOAuthConfig() {
+      const googleBtn = document.getElementById('btnGoogleSso');
+      const facebookBtn = document.getElementById('btnFacebookSso');
+
+      if (googleBtn) {
+        googleBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectParam = urlParams.get('redirect');
+          const authPath = redirectParam && redirectParam.startsWith('/')
+            ? `/auth/google?target=${encodeURIComponent(redirectParam)}`
+            : '/auth/google';
+          window.location.href = `${API_BASE}${authPath}`;
+        });
+      }
+
+      if (facebookBtn) {
+        facebookBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectParam = urlParams.get('redirect');
+          const authPath = redirectParam && redirectParam.startsWith('/')
+            ? `/auth/facebook?target=${encodeURIComponent(redirectParam)}`
+            : '/auth/facebook';
+          window.location.href = `${API_BASE}${authPath}`;
+        });
+      }
+    }
+
+    // Real-time Error Clearance
+    function initRealtimeErrorClearing() {
+      const userInput = document.getElementById('usernameOrEmail');
+      const passInput = document.getElementById('password');
+      const forgotEmailInput = document.getElementById('forgotEmail');
+      const dismissBtn = document.getElementById('btnDismissAlert');
+
+      if (userInput) {
+        userInput.addEventListener('input', () => {
+          clearErrors();
+          userInput.classList.remove('input-error');
+        });
+      }
+
+      if (passInput) {
+        passInput.addEventListener('input', () => {
+          clearErrors();
+          passInput.classList.remove('input-error');
+        });
+      }
+
+      if (forgotEmailInput) {
+        forgotEmailInput.addEventListener('input', () => {
+          clearErrors();
+          forgotEmailInput.classList.remove('input-error');
+        });
+      }
+
+      if (dismissBtn) {
+        dismissBtn.addEventListener('click', clearErrors);
+      }
+    }
+
+    function clearErrors() {
+      const alertBox = document.getElementById('loginAlert');
+      if (alertBox) alertBox.classList.add('hidden');
+
+      const uErr = document.getElementById('usernameError');
+      if (uErr) uErr.textContent = '';
+      const pErr = document.getElementById('passwordError');
+      if (pErr) pErr.textContent = '';
+      const fErr = document.getElementById('forgotEmailError');
+      if (fErr) fErr.textContent = '';
+
+      document.querySelectorAll('.field-input').forEach(i => i.classList.remove('input-error'));
+    }
+
+    function showAlert(message, title = 'Authentication Failed', isSuccess = false) {
+      const alertBox = document.getElementById('loginAlert');
+      const alertTitle = document.getElementById('loginAlertTitle');
+      const alertMsg = document.getElementById('loginAlertMessage');
+      if (alertBox && alertMsg) {
+        if (alertTitle) alertTitle.textContent = title;
+        alertMsg.textContent = message;
+
+        if (isSuccess) {
+          alertBox.style.backgroundColor = '#f0fdf4';
+          alertBox.style.borderColor = '#bbf7d0';
+          alertBox.style.color = '#166534';
+          if (alertTitle) alertTitle.style.color = '#166534';
+          alertMsg.style.color = '#15803d';
+        } else {
+          alertBox.style.backgroundColor = '';
+          alertBox.style.borderColor = '';
+          alertBox.style.color = '';
+          if (alertTitle) alertTitle.style.color = '';
+          alertMsg.style.color = '';
+        }
+
+        alertBox.classList.remove('hidden');
+      }
+    }
+
+    // Toggle between Sign In view and Forgot Password view
+    function initForgotPasswordView() {
+      const signInView = document.getElementById('signInView');
+      const forgotPasswordView = document.getElementById('forgotPasswordView');
+      const linkForgot = document.getElementById('linkForgotPassword');
+      const linkBack = document.getElementById('linkBackToLogin');
+      const forgotForm = document.getElementById('forgotPasswordForm');
+      const forgotEmail = document.getElementById('forgotEmail');
+      const btnSubmitForgot = document.getElementById('btnSubmitForgot');
+      const btnSubmitForgotText = document.getElementById('btnSubmitForgotText');
+      const forgotSpinner = document.getElementById('forgotSpinner');
+
+      if (!linkForgot || !linkBack) return;
+
+      linkForgot.addEventListener('click', (e) => {
+        e.preventDefault();
+        clearErrors();
+        signInView.classList.add('hidden');
+        forgotPasswordView.classList.remove('hidden');
+        if (forgotEmail) {
+          forgotEmail.value = '';
+          forgotEmail.focus();
+        }
+      });
+
+      linkBack.addEventListener('click', (e) => {
+        e.preventDefault();
+        clearErrors();
+        forgotPasswordView.classList.add('hidden');
+        signInView.classList.remove('hidden');
+        const userInput = document.getElementById('usernameOrEmail');
+        if (userInput) userInput.focus();
+      });
+
+      if (forgotForm) {
+        forgotForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          clearErrors();
+
+          const emailVal = (forgotEmail.value || '').trim();
+          if (!emailVal) {
+            const fErr = document.getElementById('forgotEmailError');
+            if (fErr) fErr.textContent = 'Please enter your registered email address.';
+            forgotEmail.classList.add('input-error');
+            forgotEmail.focus();
+            return;
+          }
+
+          btnSubmitForgot.disabled = true;
+          btnSubmitForgotText.textContent = 'Sending...';
+          forgotSpinner.classList.remove('hidden');
+          forgotSpinner.style.display = 'inline-block';
+
+          try {
+            const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: emailVal }),
+            });
+
+            const data = await res.json();
+
+            btnSubmitForgot.disabled = false;
+            btnSubmitForgotText.textContent = 'Send Reset Link';
+            forgotSpinner.classList.add('hidden');
+            forgotSpinner.style.display = 'none';
+
+            if (res.ok) {
+              showAlert(
+                data.message || 'If an account associated with that email exists, password reset instructions have been sent.',
+                'Reset Link Dispatched',
+                true
+              );
+            } else if (res.status === 503) {
+              showAlert(
+                data.detail || data.message || 'Password reset email delivery service is not configured on this server. Please contact your system administrator to configure SMTP settings.',
+                'Email Delivery Not Configured'
+              );
+            } else {
+              showAlert(data.detail || data.message || 'Failed to submit password reset request.', 'Request Failed');
+            }
+          } catch (err) {
+            btnSubmitForgot.disabled = false;
+            btnSubmitForgotText.textContent = 'Send Reset Link';
+            forgotSpinner.classList.add('hidden');
+            forgotSpinner.style.display = 'none';
+            showAlert('Network error: Unable to reach the authentication server.', 'Connection Error');
+          }
+        });
+      }
+    }
+
+    // Primary Login Form Submission
+    function initLoginForm() {
+      const form = document.getElementById('loginForm');
+      const userInput = document.getElementById('usernameOrEmail');
+      const passInput = document.getElementById('password');
+      const submitBtn = document.getElementById('btnSubmitLogin');
+      const btnText = document.getElementById('btnSubmitText');
+      const btnIcon = document.getElementById('btnSubmitIcon');
+      const spinner = document.getElementById('loginSpinner');
+
+      if (!form) return;
+
+      function resetSubmitButton() {
+        isSubmitting = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('btn-loading', 'btn-success');
+        }
+        if (btnText) {
+          btnText.textContent = 'Sign In';
+        }
+        if (btnIcon) {
+          btnIcon.classList.remove('hidden');
+          btnIcon.style.display = 'inline-block';
+        }
+        if (spinner) {
+          spinner.classList.add('hidden');
+          spinner.style.display = 'none';
+        }
+      }
+
+      resetSubmitButton();
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (isSubmitting) return;
+        clearErrors();
+
+        let hasError = false;
+        const usernameVal = userInput.value.trim();
+        const passwordVal = passInput.value;
+
+        if (!usernameVal) {
+          const uErr = document.getElementById('usernameError');
+          if (uErr) uErr.textContent = 'Please enter your username or email.';
+          userInput.classList.add('input-error');
+          hasError = true;
+        }
+
+        if (!passwordVal) {
+          const pErr = document.getElementById('passwordError');
+          if (pErr) pErr.textContent = 'Please enter your password.';
+          passInput.classList.add('input-error');
+          hasError = true;
+        }
+
+        if (hasError) {
+          if (!usernameVal) userInput.focus();
+          else passInput.focus();
+          return;
+        }
+
+        isSubmitting = true;
+        submitBtn.disabled = true;
+        submitBtn.classList.add('btn-loading');
+        btnText.textContent = 'Signing in...';
+        btnIcon.classList.add('hidden');
+        btnIcon.style.display = 'none';
+        spinner.classList.remove('hidden');
+        spinner.style.display = 'inline-block';
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+        try {
+          const response = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            signal: controller.signal,
+            body: JSON.stringify({
+              username_or_email: usernameVal,
+              password: passwordVal,
+            }),
+          });
+
+          clearTimeout(timeoutId);
+
+          let data = {};
+          try {
+            data = await response.json();
+          } catch (_) {
+            data = { detail: 'Unexpected response from authentication server.' };
+          }
+
+          if (!response.ok) {
+            const errorMsg = data.detail || data.message || 'Invalid username or password. Please verify your credentials.';
+            showAlert(errorMsg);
+            passInput.classList.add('input-error');
+            userInput.classList.add('input-error');
+            passInput.value = '';
+            passInput.focus();
+            resetSubmitButton();
+            return;
+          }
+
+          if (data.token) {
+            localStorage.setItem('supplyprescript_token', data.token);
+            localStorage.setItem('supplyprescript_user', JSON.stringify(data.user));
+          }
+
+          btnText.textContent = 'Access Granted. Redirecting...';
+          submitBtn.classList.remove('btn-loading');
+          submitBtn.classList.add('btn-success');
+          if (spinner) {
+            spinner.classList.add('hidden');
+            spinner.style.display = 'none';
+          }
+
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectParam = urlParams.get('redirect');
+          let redirectUrl = data.redirect_url || '/dashboard';
+
+          if (redirectParam && redirectParam.startsWith('/')) {
+            if (redirectParam === '/admin' && data.user.role !== 'admin') {
+              redirectUrl = data.redirect_url || '/dashboard';
+            } else {
+              redirectUrl = redirectParam;
+            }
+          }
+
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 300);
+
+        } catch (err) {
+          clearTimeout(timeoutId);
+          if (err.name === 'AbortError') {
+            showAlert('Authentication request timed out. Please check your backend connection.');
+          } else {
+            showAlert('Network error: Unable to reach SupplyPrescript backend.');
+          }
+          resetSubmitButton();
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>

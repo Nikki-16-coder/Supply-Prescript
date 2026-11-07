@@ -29,6 +29,11 @@ from database.db import (
     get_all_outcomes,
     get_shipment_history,
     get_analytics_summary,
+    create_user,
+    get_user_by_id,
+    get_user_by_facebook_id,
+    get_user_by_google_id,
+    link_user_oauth,
 )
 
 
@@ -560,6 +565,60 @@ class TestDatabaseAuditTrail(unittest.TestCase):
         except PermissionError:
             file_deleted = False
         self.assertTrue(file_deleted, "Database file remained locked! Connection was not closed.")
+
+    # ========================================================================
+    # 14. OAuth Provider Storage & Safe Account Linking
+    # ========================================================================
+    def test_oauth_user_provider_storage_and_linking(self):
+        """Verify user creation with OAuth provider info, lookups by provider ID, and linking."""
+        # 1. Create Facebook user
+        fb_user_id = create_user(
+            username="fb_analyst",
+            email="fb_analyst@supplyprescript.corp",
+            password="SecurePassword@123",
+            role="analyst",
+            full_name="FB Logistics Analyst",
+            auth_provider="facebook",
+            facebook_id="fb_1234567890",
+            db_path=self.db_path,
+        )
+        self.assertGreater(fb_user_id, 0)
+
+        # Lookup by facebook_id
+        fb_user = get_user_by_facebook_id("fb_1234567890", db_path=self.db_path)
+        self.assertIsNotNone(fb_user)
+        self.assertEqual(fb_user["username"], "fb_analyst")
+        self.assertEqual(fb_user["auth_provider"], "facebook")
+        self.assertEqual(fb_user["facebook_id"], "fb_1234567890")
+
+        # 2. Create local user and link Google ID
+        local_user_id = create_user(
+            username="local_mgr",
+            email="manager_local@supplyprescript.corp",
+            password="ManagerPassword@123",
+            role="manager",
+            full_name="Local Manager",
+            auth_provider="local",
+            db_path=self.db_path,
+        )
+        self.assertGreater(local_user_id, 0)
+
+        # Link Google ID
+        link_success = link_user_oauth(local_user_id, provider="google", provider_user_id="google_sub_9988", db_path=self.db_path)
+        self.assertTrue(link_success)
+
+        # Lookup by google_id
+        g_user = get_user_by_google_id("google_sub_9988", db_path=self.db_path)
+        self.assertIsNotNone(g_user)
+        self.assertEqual(g_user["username"], "local_mgr")
+        self.assertEqual(g_user["google_id"], "google_sub_9988")
+
+        # Link Facebook ID to same user (multi-provider support)
+        link_fb_success = link_user_oauth(local_user_id, provider="facebook", provider_user_id="fb_sub_9988", db_path=self.db_path)
+        self.assertTrue(link_fb_success)
+        updated_user = get_user_by_id(local_user_id, db_path=self.db_path)
+        self.assertEqual(updated_user["facebook_id"], "fb_sub_9988")
+        self.assertEqual(updated_user["google_id"], "google_sub_9988")
 
 
 if __name__ == "__main__":

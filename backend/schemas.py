@@ -163,3 +163,107 @@ class OutcomeEvaluationRequest(BaseModel):
             raise ValueError("Shipment ID cannot be empty or whitespace.")
         return v.strip()
 
+
+# ============================================================================
+# 5. User Authentication & Authorization Schemas
+# ============================================================================
+class LoginRequest(BaseModel):
+    username_or_email: str = Field(..., min_length=1, description="Username or corporate email address")
+    password: str = Field(..., min_length=1, description="Account password")
+
+    @field_validator("username_or_email", "password")
+    @classmethod
+    def validate_credentials(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Field cannot be empty or whitespace.")
+        return v.strip()
+
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    role: str
+    full_name: Optional[str] = None
+    is_active: int = 1
+    auth_provider: Optional[str] = "local"
+
+
+class LoginResponse(BaseModel):
+    status: str = "success"
+    token: str
+    token_type: str = "Bearer"
+    expires_at: str
+    user: UserResponse
+    redirect_url: str
+
+
+class LogoutResponse(BaseModel):
+    status: str = "success"
+    message: str = "Successfully logged out."
+
+
+class UserCreateRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50, description="Unique username")
+    email: str = Field(..., min_length=5, max_length=100, description="Corporate email address")
+    password: str = Field(..., min_length=6, description="Password (minimum 6 characters)")
+    role: str = Field(default="analyst", description="Role: admin, manager, or analyst")
+    full_name: Optional[str] = Field(default=None, description="Full display name")
+
+    @field_validator("username", "email")
+    @classmethod
+    def validate_user_fields(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Field cannot be empty or whitespace.")
+        return v.strip().lower()
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        clean = v.strip().lower()
+        if clean not in ("admin", "manager", "analyst"):
+            raise ValueError("Role must be one of: admin, manager, analyst")
+        return clean
+
+
+class UserStatusUpdateRequest(BaseModel):
+    is_active: bool = Field(..., description="Active flag for account")
+
+
+class UserRoleUpdateRequest(BaseModel):
+    role: str = Field(..., description="Role: admin, manager, or analyst")
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        clean = v.strip().lower()
+        if clean not in ("admin", "manager", "analyst"):
+            raise ValueError("Role must be one of: admin, manager, analyst")
+        return clean
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(..., min_length=3, max_length=100, description="Account registered email address")
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Email cannot be empty or whitespace.")
+        return v.strip().lower()
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=10, description="Password reset token")
+    new_password: str = Field(..., min_length=6, description="New password (minimum 6 characters)")
+
+    @field_validator("token")
+    @classmethod
+    def validate_token(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Reset token cannot be empty.")
+        return v.strip()
+
+
+
+

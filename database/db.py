@@ -13,7 +13,10 @@ Uses Python built-in sqlite3.
 import os
 import json
 import sqlite3
-from typing import Dict, Any, List, Optional
+import hashlib
+import secrets
+from datetime import datetime, timezone, timedelta
+from typing import Dict, Any, List, Optional, Tuple
 
 DB_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(DB_DIR, "supplyprescript.db")
@@ -107,10 +110,80 @@ def init_db(db_path: Optional[str] = None):
             """
         )
 
+        # 5. users table (Enterprise Role-Based Access Control)
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                salt TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'analyst',
+                full_name TEXT,
+                is_active INTEGER DEFAULT 1,
+                auth_provider TEXT DEFAULT 'local',
+                facebook_id TEXT,
+                google_id TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_login TIMESTAMP
+            )
+            """
+        )
+
+        # Ensure schema migrations for existing databases
+        cursor.execute("PRAGMA table_info(users)")
+        existing_user_cols = {row[1] for row in cursor.fetchall()}
+        if "auth_provider" not in existing_user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT 'local'")
+        if "facebook_id" not in existing_user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN facebook_id TEXT")
+        if "google_id" not in existing_user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN google_id TEXT")
+
+        # 6. sessions table (Server-Side Session Store with Instant Revocation)
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                session_token TEXT UNIQUE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP NOT NULL,
+                is_active INTEGER DEFAULT 1,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+
+        # 7. password_resets table (Cryptographically Hashed Single-Use Reset Tokens)
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS password_resets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                token_hash TEXT UNIQUE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP NOT NULL,
+                used INTEGER DEFAULT 0,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+
         # Indices for audit trail lookup performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_predictions_shipment_id ON predictions(shipment_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_decisions_shipment_id ON optimization_decisions(shipment_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_outcomes_shipment_id ON outcomes(shipment_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_facebook_id ON users(facebook_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_auth_provider ON users(auth_provider)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(session_token)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_password_resets_token_hash ON password_resets(token_hash)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_password_resets_user_id ON password_resets(user_id)")
 
         conn.commit()
     finally:
@@ -685,5 +758,698 @@ def get_analytics_summary(db_path: Optional[str] = None) -> Dict[str, Any]:
         conn.close()
 
 
-# Automatically initialize schema when module is imported
+# ============================================================================
+# User Authentication & Session Management (PBKDF2 & SQLite Session Store)
+# ============================================================================
+PBKDF2_ITERATIONS = 200_000
+
+
+def hash_password(password: str, salt: Optional[str] = None) -> Tuple[str, str]:
+    """
+    Computes cryptographic PBKDF2-HMAC-SHA256 password hash using a secure random salt.
+    Returns (hex_hash, hex_salt).
+    """
+    if not password:
+        raise ValueError("Password cannot be empty.")
+    if salt is None:
+        salt = secrets.token_hex(16)
+    key = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        iterations=PBKDF2_ITERATIONS,
+    )
+    return key.hex(), salt
+
+
+def verify_password(password: str, password_hash: str, salt: str) -> bool:
+    """
+    Constant-time comparison of candidate password against stored PBKDF2 hash.
+    Mitigates timing attacks using secrets.compare_digest.
+    """
+    if not password or not password_hash or not salt:
+        return False
+    key = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        iterations=PBKDF2_ITERATIONS,
+    )
+    return secrets.compare_digest(key.hex(), password_hash)
+
+
+def create_user(
+    username: str,
+    email: str,
+    password: str,
+    role: str = "analyst",
+    full_name: Optional[str] = None,
+    auth_provider: str = "local",
+    facebook_id: Optional[str] = None,
+    google_id: Optional[str] = None,
+    db_path: Optional[str] = None,
+    conn: Optional[sqlite3.Connection] = None,
+) -> int:
+    """
+    Creates a new user with secure password hash and assigned enterprise role.
+    Allowed roles: 'admin', 'manager', 'analyst'.
+    """
+    if not username or not username.strip():
+        raise ValueError("Username cannot be empty or whitespace.")
+    clean_username = username.strip().lower()
+
+    if not email or "@" not in email or not email.strip():
+        raise ValueError("Valid email address is required.")
+    clean_email = email.strip().lower()
+
+    if not password or len(password) < 6:
+        raise ValueError("Password must be at least 6 characters.")
+
+    valid_roles = ("admin", "manager", "analyst")
+    clean_role = role.strip().lower() if role else "analyst"
+    if clean_role not in valid_roles:
+        raise ValueError(f"Invalid role '{role}'. Allowed roles: {', '.join(valid_roles)}")
+
+    pwd_hash, salt = hash_password(password)
+    clean_provider = (auth_provider or "local").strip().lower()
+
+    own_conn = conn is None
+    active_conn = conn or get_connection(db_path)
+    try:
+        cursor = active_conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO users (username, email, password_hash, salt, role, full_name, is_active, auth_provider, facebook_id, google_id)
+            VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+            """,
+            (
+                clean_username,
+                clean_email,
+                pwd_hash,
+                salt,
+                clean_role,
+                full_name or clean_username.title(),
+                clean_provider,
+                str(facebook_id).strip() if facebook_id else None,
+                str(google_id).strip() if google_id else None,
+            ),
+        )
+        if own_conn:
+            active_conn.commit()
+        return cursor.lastrowid
+    except sqlite3.IntegrityError as exc:
+        raise ValueError(f"User with username '{clean_username}' or email '{clean_email}' already exists.") from exc
+    finally:
+        if own_conn:
+            active_conn.close()
+
+
+def get_user_by_username_or_email(
+    identifier: str,
+    db_path: Optional[str] = None,
+    conn: Optional[sqlite3.Connection] = None,
+) -> Optional[Dict[str, Any]]:
+    """Retrieves user record by username or email (case-insensitive)."""
+    if not identifier or not identifier.strip():
+        return None
+    clean_id = identifier.strip().lower()
+
+    own_conn = conn is None
+    active_conn = conn or get_connection(db_path)
+    try:
+        cursor = active_conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, username, email, password_hash, salt, role, full_name, is_active,
+                   auth_provider, facebook_id, google_id, created_at, last_login
+            FROM users
+            WHERE lower(username) = ? OR lower(email) = ?
+            LIMIT 1
+            """,
+            (clean_id, clean_id),
+        )
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        if own_conn:
+            active_conn.close()
+
+
+def get_user_by_id(
+    user_id: int,
+    db_path: Optional[str] = None,
+    conn: Optional[sqlite3.Connection] = None,
+) -> Optional[Dict[str, Any]]:
+    """Retrieves sanitized user profile by primary key ID."""
+    own_conn = conn is None
+    active_conn = conn or get_connection(db_path)
+    try:
+        cursor = active_conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, username, email, role, full_name, is_active,
+                   auth_provider, facebook_id, google_id, created_at, last_login
+            FROM users
+            WHERE id = ? LIMIT 1
+            """,
+            (user_id,),
+        )
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        if own_conn:
+            active_conn.close()
+
+
+def get_user_by_facebook_id(
+    facebook_id: str,
+    db_path: Optional[str] = None,
+    conn: Optional[sqlite3.Connection] = None,
+) -> Optional[Dict[str, Any]]:
+    """Retrieves user record by unique Facebook ID."""
+    if not facebook_id or not str(facebook_id).strip():
+        return None
+    clean_fb_id = str(facebook_id).strip()
+
+    own_conn = conn is None
+    active_conn = conn or get_connection(db_path)
+    try:
+        cursor = active_conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, username, email, password_hash, salt, role, full_name, is_active,
+                   auth_provider, facebook_id, google_id, created_at, last_login
+            FROM users
+            WHERE facebook_id = ?
+            LIMIT 1
+            """,
+            (clean_fb_id,),
+        )
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        if own_conn:
+            active_conn.close()
+
+
+def get_user_by_google_id(
+    google_id: str,
+    db_path: Optional[str] = None,
+    conn: Optional[sqlite3.Connection] = None,
+) -> Optional[Dict[str, Any]]:
+    """Retrieves user record by unique Google ID / Subject."""
+    if not google_id or not str(google_id).strip():
+        return None
+    clean_g_id = str(google_id).strip()
+
+    own_conn = conn is None
+    active_conn = conn or get_connection(db_path)
+    try:
+        cursor = active_conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, username, email, password_hash, salt, role, full_name, is_active,
+                   auth_provider, facebook_id, google_id, created_at, last_login
+            FROM users
+            WHERE google_id = ?
+            LIMIT 1
+            """,
+            (clean_g_id,),
+        )
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        if own_conn:
+            active_conn.close()
+
+
+def link_user_oauth(
+    user_id: int,
+    provider: str,
+    provider_user_id: str,
+    db_path: Optional[str] = None,
+    conn: Optional[sqlite3.Connection] = None,
+) -> bool:
+    """
+    Safely links an OAuth provider ID (facebook_id or google_id) to an existing user.
+    Also ensures the auth_provider column reflects the linked status.
+    """
+    if not user_id or not provider or not provider_user_id:
+        return False
+
+    clean_provider = provider.strip().lower()
+    clean_pid = str(provider_user_id).strip()
+
+    own_conn = conn is None
+    active_conn = conn or get_connection(db_path)
+    try:
+        cursor = active_conn.cursor()
+        if clean_provider == "facebook":
+            cursor.execute(
+                """
+                UPDATE users
+                SET facebook_id = ?,
+                    auth_provider = CASE WHEN auth_provider IS NULL OR auth_provider = 'local' THEN 'facebook' ELSE auth_provider END,
+                    last_login = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (clean_pid, user_id),
+            )
+        elif clean_provider == "google":
+            cursor.execute(
+                """
+                UPDATE users
+                SET google_id = ?,
+                    auth_provider = CASE WHEN auth_provider IS NULL OR auth_provider = 'local' THEN 'google' ELSE auth_provider END,
+                    last_login = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (clean_pid, user_id),
+            )
+        else:
+            return False
+
+        if own_conn:
+            active_conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        if own_conn:
+            active_conn.close()
+        if own_conn:
+            active_conn.close()
+
+
+def authenticate_user(
+    username_or_email: str,
+    password: str,
+    db_path: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    Authenticates candidate credentials against database.
+    Returns sanitized user profile dict if valid, or None if authentication fails.
+    """
+    user = get_user_by_username_or_email(username_or_email, db_path=db_path)
+    if not user:
+        return None
+    if not user.get("is_active", 1):
+        return None
+
+    # Cryptographic verification: candidate password against stored PBKDF2 hash
+    if not verify_password(password, user["password_hash"], user["salt"]):
+        return None
+
+    # Update last login timestamp
+    conn = get_connection(db_path)
+    try:
+        conn.execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", (user["id"],))
+        conn.commit()
+    finally:
+        conn.close()
+
+    # Return sanitized user record (exclude password_hash and salt)
+    return {
+        "id": user["id"],
+        "username": user["username"],
+        "email": user["email"],
+        "role": user["role"],
+        "full_name": user["full_name"],
+        "is_active": user["is_active"],
+    }
+
+
+def create_session(
+    user_id: int,
+    duration_hours: int = 24,
+    db_path: Optional[str] = None,
+) -> str:
+    """
+    Generates a cryptographically secure random session token and stores it in SQLite.
+    Returns the session token string.
+    """
+    session_token = secrets.token_urlsafe(32)
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=duration_hours)).strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO sessions (user_id, session_token, expires_at, is_active)
+            VALUES (?, ?, ?, 1)
+            """,
+            (user_id, session_token, expires_at),
+        )
+        conn.commit()
+        return session_token
+    finally:
+        conn.close()
+
+
+def get_session_user(
+    session_token: str,
+    db_path: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    Validates a session token against active sessions.
+    Returns the user profile if active and unexpired, None otherwise.
+    """
+    if not session_token or not session_token.strip():
+        return None
+    clean_token = session_token.strip()
+
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute(
+            """
+            SELECT u.id, u.username, u.email, u.role, u.full_name, u.is_active,
+                   u.auth_provider, u.facebook_id, u.google_id,
+                   s.session_token, s.expires_at
+            FROM sessions s
+            JOIN users u ON s.user_id = u.id
+            WHERE s.session_token = ?
+              AND s.is_active = 1
+              AND s.expires_at > ?
+              AND u.is_active = 1
+            LIMIT 1
+            """,
+            (clean_token, now_str),
+        )
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def revoke_session(
+    session_token: str,
+    db_path: Optional[str] = None,
+) -> bool:
+    """Invalidates an active session token (instant logout)."""
+    if not session_token:
+        return False
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE sessions SET is_active = 0 WHERE session_token = ?",
+            (session_token.strip(),),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
+def revoke_all_user_sessions(
+    user_id: int,
+    db_path: Optional[str] = None,
+) -> int:
+    """Invalidates all sessions for a specific user ID."""
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE sessions SET is_active = 0 WHERE user_id = ?", (user_id,))
+        conn.commit()
+        return cursor.rowcount
+    finally:
+        conn.close()
+
+
+def create_password_reset_token(
+    user_id: int,
+    duration_minutes: int = 15,
+    db_path: Optional[str] = None,
+) -> str:
+    """
+    Generates a cryptographically secure, single-use password reset token.
+    Stores the SHA-256 hash of the token with a 15-minute expiration timestamp.
+    Invalidates any previous unused tokens for the specified user.
+    Returns the unhashed raw token string for dispatch (never persisted in plain text).
+    """
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=duration_minutes)).strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        # Invalidate existing unused tokens for this user
+        cursor.execute(
+            "UPDATE password_resets SET used = 1 WHERE user_id = ? AND used = 0",
+            (user_id,),
+        )
+        cursor.execute(
+            """
+            INSERT INTO password_resets (user_id, token_hash, expires_at, used)
+            VALUES (?, ?, ?, 0)
+            """,
+            (user_id, token_hash, expires_at),
+        )
+        conn.commit()
+        return raw_token
+    finally:
+        conn.close()
+
+
+def verify_password_reset_token(
+    raw_token: str,
+    db_path: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    Verifies that a password reset token exists, is unused, is unexpired, and belongs to an active user.
+    Returns the reset record with user metadata if valid, or None.
+    """
+    if not raw_token or not raw_token.strip():
+        return None
+    token_hash = hashlib.sha256(raw_token.strip().encode("utf-8")).hexdigest()
+    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT pr.id, pr.user_id, pr.expires_at, pr.used,
+                   u.username, u.email, u.role, u.is_active
+            FROM password_resets pr
+            JOIN users u ON pr.user_id = u.id
+            WHERE pr.token_hash = ?
+              AND pr.used = 0
+              AND pr.expires_at > ?
+              AND u.is_active = 1
+            LIMIT 1
+            """,
+            (token_hash, now_str),
+        )
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def complete_password_reset(
+    raw_token: str,
+    new_password: str,
+    db_path: Optional[str] = None,
+) -> bool:
+    """
+    Applies the new password for a valid reset token.
+    Invalidates the reset token (marks used = 1) and revokes all active sessions for that user.
+    Returns True if the reset was successful, False otherwise.
+    """
+    if not new_password or len(new_password) < 6:
+        return False
+    record = verify_password_reset_token(raw_token, db_path=db_path)
+    if not record:
+        return False
+
+    user_id = record["user_id"]
+    token_hash = hashlib.sha256(raw_token.strip().encode("utf-8")).hexdigest()
+    pwd_hash, salt = hash_password(new_password)
+
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?",
+            (pwd_hash, salt, user_id),
+        )
+        cursor.execute(
+            "UPDATE password_resets SET used = 1 WHERE token_hash = ?",
+            (token_hash,),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    # Revoke all active sessions for security so user logs in cleanly with new credentials
+    revoke_all_user_sessions(user_id, db_path=db_path)
+    return True
+
+
+def list_all_users(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Returns list of all users with sensitive hash/salt redacted."""
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, username, email, role, full_name, is_active,
+                   auth_provider, facebook_id, google_id, created_at, last_login
+            FROM users
+            ORDER BY id ASC
+            """
+        )
+        return [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+def count_users(db_path: Optional[str] = None) -> int:
+    """Returns the total number of registered users."""
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        return cursor.fetchone()[0]
+    finally:
+        conn.close()
+
+
+def update_user_status(user_id: int, is_active: int, db_path: Optional[str] = None) -> bool:
+    """Updates user active status. Revokes active sessions if deactivated."""
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET is_active = ? WHERE id = ?", (1 if is_active else 0, user_id))
+        conn.commit()
+        updated = cursor.rowcount > 0
+        if updated and not is_active:
+            revoke_all_user_sessions(user_id, db_path=db_path)
+        return updated
+    finally:
+        conn.close()
+
+
+def update_user_role(user_id: int, role: str, db_path: Optional[str] = None) -> bool:
+    """Updates assigned role for a user. Valid roles: admin, manager, analyst."""
+    valid_roles = ("admin", "manager", "analyst")
+    clean_role = role.strip().lower() if role else "analyst"
+    if clean_role not in valid_roles:
+        raise ValueError(f"Invalid role '{role}'. Allowed roles: {', '.join(valid_roles)}")
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET role = ? WHERE id = ?", (clean_role, user_id))
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
+def delete_user(user_id: int, db_path: Optional[str] = None) -> bool:
+    """Deletes a user record by ID. Deletes associated sessions automatically via cascade."""
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
+def get_system_db_stats(db_path: Optional[str] = None) -> Dict[str, Any]:
+    """Retrieves operational table counts and storage telemetry for admin diagnostics."""
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM shipments")
+        shipments_count = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM predictions")
+        predictions_count = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM optimization_decisions")
+        decisions_count = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM outcomes")
+        outcomes_count = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM users")
+        users_count = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM sessions WHERE is_active = 1")
+        active_sessions = cursor.fetchone()[0]
+
+        target_path = db_path or os.environ.get("SUPPLYPRESCRIPT_DB_PATH") or DB_PATH
+        size_bytes = os.path.getsize(target_path) if os.path.exists(target_path) else 0
+
+        return {
+            "database_file": os.path.basename(target_path),
+            "database_path": target_path,
+            "database_size_bytes": size_bytes,
+            "database_size_kb": round(size_bytes / 1024, 2),
+            "shipments_count": shipments_count,
+            "predictions_count": predictions_count,
+            "decisions_count": decisions_count,
+            "outcomes_count": outcomes_count,
+            "users_count": users_count,
+            "active_sessions_count": active_sessions,
+        }
+    finally:
+        conn.close()
+
+
+def seed_default_users_if_empty(db_path: Optional[str] = None) -> None:
+    """
+    Seeds and ensures initial enterprise demonstration accounts exist in the SQLite database:
+    - admin: Executive Administrator (role: admin, default pwd: Admin@123)
+    - manager: Supply Chain Manager (role: manager, default pwd: Manager@123)
+    - analyst: Logistics Analyst (role: analyst, default pwd: Analyst@123)
+    Password can be overridden via environment variables:
+    - SUPPLYPRESCRIPT_ADMIN_PASSWORD / ADMIN_PASSWORD
+    - SUPPLYPRESCRIPT_MANAGER_PASSWORD
+    - SUPPLYPRESCRIPT_ANALYST_PASSWORD
+    """
+    admin_pwd = os.environ.get("SUPPLYPRESCRIPT_ADMIN_PASSWORD") or os.environ.get("ADMIN_PASSWORD") or "Admin@123"
+    manager_pwd = os.environ.get("SUPPLYPRESCRIPT_MANAGER_PASSWORD") or "Manager@123"
+    analyst_pwd = os.environ.get("SUPPLYPRESCRIPT_ANALYST_PASSWORD") or "Analyst@123"
+
+    demo_accounts = [
+        ("admin", "admin@supplyprescript.corp", admin_pwd, "admin", "Executive Administrator"),
+        ("manager", "manager@supplyprescript.corp", manager_pwd, "manager", "Supply Chain Manager"),
+        ("analyst", "analyst@supplyprescript.corp", analyst_pwd, "analyst", "Logistics Analyst"),
+    ]
+
+    for uname, email, pwd, role, full_name in demo_accounts:
+        user = get_user_by_username_or_email(uname, db_path=db_path)
+        if not user:
+            try:
+                create_user(
+                    username=uname,
+                    email=email,
+                    password=pwd,
+                    role=role,
+                    full_name=full_name,
+                    db_path=db_path,
+                )
+            except Exception as exc:
+                print(f"User seeding notice for {uname}: {exc}")
+        else:
+            # If demo account exists, ensure it is active and its stored hash verifies against preset
+            needs_pwd_sync = not verify_password(pwd, user["password_hash"], user["salt"])
+            is_deactivated = not user.get("is_active", 1)
+            if needs_pwd_sync or is_deactivated:
+                pwd_hash, salt = hash_password(pwd)
+                conn = get_connection(db_path)
+                try:
+                    conn.execute(
+                        "UPDATE users SET password_hash = ?, salt = ?, is_active = 1 WHERE id = ?",
+                        (pwd_hash, salt, user["id"]),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+
+
+# Automatically initialize schema and seed default users when module is imported
 init_db()
+seed_default_users_if_empty()

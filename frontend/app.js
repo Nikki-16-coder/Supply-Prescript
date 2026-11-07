@@ -4,22 +4,142 @@
  * Preserves 100% of existing functionality, endpoints, and data bindings.
  */
 
-const API_BASE = window.location.origin.startsWith('http') 
-  ? window.location.origin 
-  : 'http://127.0.0.1:8000';
+function resolveApiBase() {
+  if (window.location.protocol === 'file:' || !window.location.origin.startsWith('http')) {
+    return 'http://127.0.0.1:8000';
+  }
+  if (window.location.port === '8000' || window.location.port === '') {
+    return window.location.origin;
+  }
+  return `${window.location.protocol}//${window.location.hostname}:8000`;
+}
+
+const API_BASE = resolveApiBase();
 
 let currentPrescription = null;
+let currentUser = null;
+
+function getAuthHeaders(extra = {}) {
+  const token = localStorage.getItem('supplyprescript_token');
+  const headers = { ...extra };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 // ============================================================================
 // Initialization & Health Check
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
+  checkSessionAndInitUser();
   initHealthCheck();
   initTabNavigation();
   initPresetButtons();
   initFormHandlers();
+  initSignOutButton();
   loadMlMetrics();
+  initOAuthConfig();
 });
+
+async function checkSessionAndInitUser() {
+  // 1. Capture any OAuth token returned in the URL hash fragment (e.g. #token=...)
+  if (window.location.hash && window.location.hash.includes('token=')) {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const token = hashParams.get('token');
+    if (token) {
+      localStorage.setItem('supplyprescript_token', token);
+      history.replaceState(null, document.title, window.location.pathname + window.location.search);
+    }
+  }
+
+  // 2. Capture any OAuth token returned in the URL query string (e.g. ?token=...)
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryToken = urlParams.get('token');
+  if (queryToken) {
+    localStorage.setItem('supplyprescript_token', queryToken);
+    urlParams.delete('token');
+    const newSearch = urlParams.toString() ? `?${urlParams.toString()}` : '';
+    history.replaceState(null, document.title, window.location.pathname + newSearch + window.location.hash);
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      credentials: 'include',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+      throw new Error(`Auth status: ${res.status}`);
+    }
+    currentUser = await res.json();
+    renderUserProfile(currentUser);
+
+    // Sync role-based initial view if URL tab parameter or hash is present
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && document.getElementById(`tab-${tabParam}`)) {
+      switchTab(`tab-${tabParam}`);
+    } else if (window.location.hash) {
+      const hashTab = `tab-${window.location.hash.replace('#', '')}`;
+      if (document.getElementById(hashTab)) {
+        switchTab(hashTab);
+      }
+    }
+  } catch (err) {
+    // Unauthenticated: redirect to enterprise login page
+    localStorage.removeItem('supplyprescript_token');
+    localStorage.removeItem('supplyprescript_user');
+    window.location.href = '/login';
+  }
+}
+
+function renderUserProfile(user) {
+  const avatar = document.getElementById('userAvatarBadge');
+  const nameEl = document.getElementById('userDisplayName');
+  const roleEl = document.getElementById('userRoleBadge');
+
+  if (!user) return;
+
+  const initials = (user.username || 'US').substring(0, 2).toUpperCase();
+  if (avatar) avatar.textContent = initials;
+  if (nameEl) nameEl.textContent = user.full_name || user.username;
+
+  if (roleEl) {
+    const roleUpper = (user.role || 'ANALYST').toUpperCase();
+    roleEl.textContent = roleUpper;
+    roleEl.className = `user-role-pill mono role-${user.role || 'analyst'}`;
+  }
+
+  const adminNavBtn = document.getElementById('navAdminPortalBtn');
+  if (adminNavBtn) {
+    if ((user.role || '').toLowerCase() === 'admin') {
+      adminNavBtn.classList.remove('hidden');
+    } else {
+      adminNavBtn.classList.add('hidden');
+    }
+  }
+}
+
+function initSignOutButton() {
+  const btn = document.getElementById('btnHeaderSignOut');
+  if (!btn) return;
+
+  btn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: getAuthHeaders(),
+      });
+    } catch (e) {
+      // Proceed with local logout regardless of network status
+    }
+    localStorage.removeItem('supplyprescript_token');
+    localStorage.removeItem('supplyprescript_user');
+    window.location.href = '/login';
+  });
+}
 
 async function initHealthCheck() {
   const badge = document.getElementById('backendStatusBadge');
@@ -310,7 +430,8 @@ function initFormHandlers() {
       try {
         const res = await fetch(`${API_BASE}/predict`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -342,7 +463,8 @@ function initFormHandlers() {
       try {
         const res = await fetch(`${API_BASE}/prescribe`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -367,6 +489,11 @@ function initFormHandlers() {
   const btnRecordDecision = document.getElementById('btnRecordDecision');
   if (btnRecordDecision) {
     btnRecordDecision.addEventListener('click', async () => {
+      if (currentUser && currentUser.role === 'analyst') {
+        showToast('Access Denied: Manager or Administrator role required to approve mitigation decisions.', 'error');
+        return;
+      }
+
       const shipmentId = document.getElementById('shipmentId').value.trim();
       const selectedRadio = document.querySelector('input[name="manager_choice"]:checked');
       if (!selectedRadio) {
@@ -380,13 +507,17 @@ function initFormHandlers() {
       try {
         const res = await fetch(`${API_BASE}/decision`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({
             shipment_id: shipmentId,
             manager_decision: managerDecision,
             notes: notes || `Approved ${managerDecision}`
           })
         });
+        if (res.status === 403) {
+          throw new Error('Insufficient permissions. Manager role required.');
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         updateWorkflowStepper(4);
@@ -413,7 +544,8 @@ function initFormHandlers() {
       try {
         const res = await fetch(`${API_BASE}/outcome`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({
             shipment_id: shipmentId,
             actual_delivery_days: actualDays,
@@ -560,9 +692,9 @@ function renderPrescription(data, inputPayload) {
 async function loadAuditTrail() {
   try {
     const [analyticsRes, decisionsRes, outcomesRes] = await Promise.all([
-      fetch(`${API_BASE}/analytics`),
-      fetch(`${API_BASE}/history/decisions`),
-      fetch(`${API_BASE}/history/outcomes`)
+      fetch(`${API_BASE}/analytics`, { credentials: 'include', headers: getAuthHeaders() }),
+      fetch(`${API_BASE}/history/decisions`, { credentials: 'include', headers: getAuthHeaders() }),
+      fetch(`${API_BASE}/history/outcomes`, { credentials: 'include', headers: getAuthHeaders() })
     ]);
 
     if (analyticsRes.ok) {
@@ -632,7 +764,10 @@ async function loadAuditTrail() {
 // ============================================================================
 async function loadMlMetrics() {
   try {
-    const res = await fetch(`${API_BASE}/ml/metrics`);
+    const res = await fetch(`${API_BASE}/ml/metrics`, {
+      credentials: 'include',
+      headers: getAuthHeaders(),
+    });
     if (res.ok) {
       const data = await res.json();
       const acc = document.getElementById('mlMetricAcc');
@@ -671,3 +806,138 @@ function showToast(message, type = 'success') {
     setTimeout(() => toast.remove(), 180);
   }, 2600);
 }
+
+// ============================================================================
+// Single Sign-On (SSO) Configuration Helper
+// ============================================================================
+async function fetchOAuthConfig() {
+  const timestamp = Date.now();
+  const urls = [
+    `/auth/oauth-config?_t=${timestamp}`,
+    `${API_BASE}/auth/oauth-config?_t=${timestamp}`,
+    `http://127.0.0.1:8000/auth/oauth-config?_t=${timestamp}`,
+    `http://localhost:8000/auth/oauth-config?_t=${timestamp}`,
+  ];
+  const uniqueUrls = [...new Set(urls)];
+
+  for (const url of uniqueUrls) {
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (_) {}
+  }
+  return { google_oauth_enabled: false, facebook_oauth_enabled: false };
+}
+
+async function initOAuthConfig() {
+  const googleBtn = document.getElementById('btnGoogleSso');
+  const googlePill = document.getElementById('googleSsoPill');
+  const facebookBtn = document.getElementById('btnFacebookSso');
+  const facebookPill = document.getElementById('facebookSsoPill');
+  const note = document.getElementById('ssoDisclaimerNote');
+  if (!googleBtn && !facebookBtn) return;
+
+  const config = await fetchOAuthConfig();
+  const isGoogleEnabled = Boolean(
+    config && (
+      config.google_oauth_enabled === true ||
+      config.google_oauth_enabled === 'true' ||
+      config.google_oauth_enabled === 1 ||
+      Boolean(config.google_client_id)
+    )
+  );
+
+  const isFacebookEnabled = Boolean(
+    config && (
+      config.facebook_oauth_enabled === true ||
+      config.facebook_oauth_enabled === 'true' ||
+      config.facebook_oauth_enabled === 1 ||
+      Boolean(config.facebook_client_id)
+    )
+  );
+
+  const authBase = (window.location.protocol === 'file:' || !window.location.origin.startsWith('http'))
+    ? 'http://127.0.0.1:8000'
+    : window.location.origin;
+
+  if (googleBtn && isGoogleEnabled) {
+    googleBtn.disabled = false;
+    googleBtn.removeAttribute('disabled');
+    googleBtn.classList.remove('disabled');
+    googleBtn.classList.add('active');
+    googleBtn.setAttribute('title', 'Sign in securely with corporate Google Workspace');
+    googleBtn.setAttribute('aria-disabled', 'false');
+    googleBtn.style.cursor = 'pointer';
+    googleBtn.style.opacity = '1';
+    googleBtn.style.pointerEvents = 'auto';
+
+    if (googlePill) {
+      googlePill.textContent = 'Active';
+      googlePill.classList.remove('unavailable');
+      googlePill.classList.add('active');
+      googlePill.style.background = '#dcfce7';
+      googlePill.style.color = '#15803d';
+    }
+
+    googleBtn.onclick = (e) => {
+      e.preventDefault();
+      const params = new URLSearchParams(window.location.search);
+      const redirectParam = params.get('redirect');
+      const authPath = redirectParam && redirectParam.startsWith('/')
+        ? `/auth/google?target=${encodeURIComponent(redirectParam)}`
+        : '/auth/google';
+      window.location.href = `${authBase}${authPath}`;
+    };
+  }
+
+  if (facebookBtn && isFacebookEnabled) {
+    facebookBtn.disabled = false;
+    facebookBtn.removeAttribute('disabled');
+    facebookBtn.classList.remove('disabled');
+    facebookBtn.classList.add('active');
+    facebookBtn.setAttribute('title', 'Sign in securely with Facebook account');
+    facebookBtn.setAttribute('aria-disabled', 'false');
+    facebookBtn.style.cursor = 'pointer';
+    facebookBtn.style.opacity = '1';
+    facebookBtn.style.pointerEvents = 'auto';
+
+    if (facebookPill) {
+      facebookPill.textContent = 'Active';
+      facebookPill.classList.remove('unavailable');
+      facebookPill.classList.add('active');
+      facebookPill.style.background = '#dcfce7';
+      facebookPill.style.color = '#15803d';
+    }
+
+    facebookBtn.onclick = (e) => {
+      e.preventDefault();
+      const params = new URLSearchParams(window.location.search);
+      const redirectParam = params.get('redirect');
+      const authPath = redirectParam && redirectParam.startsWith('/')
+        ? `/auth/facebook?target=${encodeURIComponent(redirectParam)}`
+        : '/auth/facebook';
+      window.location.href = `${authBase}${authPath}`;
+    };
+  }
+
+  if (note) {
+    if (isGoogleEnabled && isFacebookEnabled) {
+      note.textContent = 'Google & Facebook Single Sign-On are active. Choose your preferred SSO provider.';
+    } else if (isGoogleEnabled) {
+      note.textContent = 'Google Workspace Single Sign-On is active. Click Google SSO to authenticate.';
+    } else if (isFacebookEnabled) {
+      note.textContent = 'Facebook Single Sign-On is active. Click Facebook SSO to authenticate.';
+    }
+  }
+}
+
+// Expose globally for testing or client script access
+window.fetchOAuthConfig = fetchOAuthConfig;
+window.initOAuthConfig = initOAuthConfig;
+

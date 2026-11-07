@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Console — SupplyPrescript Enterprise Decision Support</title>
+  <meta name="description" content="Executive administrator control center for SupplyPrescript. Manage users, role permissions, audit trails, and system diagnostics.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/dashboard/logo.png">
+  <link rel="stylesheet" href="/dashboard/style.css">
+</head>
+<body class="admin-body">
+
+  <div class="admin-app-layout">
+    
+    <!-- ======================================================================
+         SIDEBAR NAVIGATION
+         ====================================================================== -->
+    <aside class="admin-sidebar" role="navigation" aria-label="Admin Navigation">
+      
+      <!-- Brand Anchor -->
+      <div class="admin-sidebar-header">
+        <a href="/dashboard" class="admin-brand-link" title="SupplyPrescript Platform">
+          <img src="/dashboard/logo.png" alt="SupplyPrescript Logo" class="admin-brand-logo">
+          <div class="admin-brand-text">
+            <span class="admin-brand-name">SupplyPrescript</span>
+            <span class="admin-brand-badge mono">ADMIN CONSOLE</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Navigation Section Links -->
+      <nav class="admin-nav-menu">
+        <div class="admin-nav-category">GOVERNANCE &amp; CONTROL</div>
+        
+        <button type="button" class="admin-nav-item active" data-target="admin-section-stats" id="navItemStats">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Dashboard Overview</span>
+        </button>
+
+        <button type="button" class="admin-nav-item" data-target="admin-section-users" id="navItemUsers">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span>User &amp; Role Management</span>
+          <span id="sidebarUserCountBadge" class="nav-count-badge mono">--</span>
+        </button>
+
+        <button type="button" class="admin-nav-item" data-target="admin-section-audit" id="navItemAudit">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span>Decision Audit Trail</span>
+        </button>
+
+        <button type="button" class="admin-nav-item" data-target="admin-section-diagnostics" id="navItemDiagnostics">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+          <span>System &amp; ML Diagnostics</span>
+        </button>
+
+        <div class="admin-nav-category">PLATFORM JUMP</div>
+
+        <a href="/dashboard?tab=console" class="admin-nav-item external-jump">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span>Decision Console</span>
+          <span class="jump-arrow">&rarr;</span>
+        </a>
+
+        <a href="/dashboard?tab=home" class="admin-nav-item external-jump">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span>Platform Overview</span>
+          <span class="jump-arrow">&rarr;</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar User Profile Footer -->
+      <div class="admin-sidebar-footer">
+        <div class="sidebar-user-card">
+          <div id="adminUserAvatar" class="sidebar-user-avatar mono">AD</div>
+          <div class="sidebar-user-meta">
+            <div id="adminUserFullName" class="sidebar-user-name">Administrator</div>
+            <div class="sidebar-role-pill mono">EXECUTIVE ADMIN</div>
+          </div>
+          <button type="button" id="btnSidebarSignOut" class="sidebar-signout-btn" title="Sign out of SupplyPrescript">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ======================================================================
+         MAIN CONTENT CANVAS
+         ====================================================================== -->
+    <div class="admin-main-wrapper">
+      
+      <!-- Top Sticky Navigation Bar -->
+      <header class="admin-topbar" role="banner">
+        <div class="topbar-left">
+          <span class="topbar-breadcrumb mono">SUPPLYPRESCRIPT / <span id="topbarCurrentSectionTitle" class="accent">DASHBOARD OVERVIEW</span></span>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Backend Engine Status -->
+          <div id="adminEngineStatusBadge" class="status-indicator-chip" title="FastAPI Health">
+            <span class="chip-status-dot online"></span>
+            <span id="adminEngineStatusText" class="mono">FastAPI Live</span>
+          </div>
+
+          <!-- SQLite DB Status -->
+          <div id="adminDbStatusBadge" class="status-indicator-chip" title="SQLite Database Persistence">
+            <span class="chip-status-dot online"></span>
+            <span id="adminDbStatusText" class="mono">SQLite OK</span>
+          </div>
+
+          <!-- Console Quick Launch Button -->
+          <a href="/dashboard?tab=console" class="btn-topbar-action">
+            <span>Decision Console</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </a>
+
+          <!-- Topbar Sign Out -->
+          <button type="button" id="btnTopbarSignOut" class="btn-topbar-signout">
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Scrollable Content View -->
+      <main class="admin-content-scrollable" id="mainContent">
+        
+        <!-- Live Alert Notification Toast / Banner -->
+        <div id="adminGlobalAlert" class="admin-alert-banner hidden" role="alert">
+          <div class="alert-icon-wrap" id="adminAlertIcon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <div class="alert-text-wrap" id="adminAlertMessage">Operation completed successfully.</div>
+          <button type="button" class="alert-dismiss-btn" id="btnDismissAdminAlert">&times;</button>
+        </div>
+
+        <!-- ==================================================================
+             SECTION 1: DASHBOARD OVERVIEW & KEY PERFORMANCE STATISTICS
+             ================================================================== -->
+        <section id="admin-section-stats" class="admin-tab-view active" aria-labelledby="headingStats">
+          
+          <div class="view-header-strip">
+            <div>
+              <h1 class="view-headline" id="headingStats">Enterprise System Overview</h1>
+              <p class="view-subheadline">
+                Real-time operational telemetry, decision statistics, and database persistence metrics.
+              </p>
+            </div>
+            <button type="button" class="btn-refresh-data" id="btnRefreshAnalytics" title="Refresh all statistics from SQLite">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              <span>Refresh Telemetry</span>
+            </button>
+          </div>
+
+          <!-- Primary Metric Cards Grid -->
+          <div class="admin-metrics-grid">
+            
+            <div class="admin-stat-card">
+              <div class="stat-card-top">
+                <span class="stat-label">TOTAL SHIPMENTS TRACKED</span>
+                <span class="stat-icon-pill blue">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                </span>
+              </div>
+              <div class="stat-number mono" id="kpiTotalShipments">--</div>
+              <div class="stat-subtext">Persisted in SQLite shipments table</div>
+            </div>
+
+            <div class="admin-stat-card">
+              <div class="stat-card-top">
+                <span class="stat-label">ML DELAY PREDICTIONS</span>
+                <span class="stat-icon-pill purple">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                </span>
+              </div>
+              <div class="stat-number mono" id="kpiTotalPredictions">--</div>
+              <div class="stat-subtext">Avg Delay Risk: <span id="kpiAvgRisk" class="mono font-bold">--%</span></div>
+            </div>
+
+            <div class="admin-stat-card">
+              <div class="stat-card-top">
+                <span class="stat-label">PULP OPTIMIZATION SOLVES</span>
+                <span class="stat-icon-pill cyan">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                </span>
+              </div>
+              <div class="stat-number mono" id="kpiTotalDecisions">--</div>
+              <div class="stat-subtext">Optimal Solves: <span id="kpiOptimalRatio" class="mono font-bold">--</span></div>
+            </div>
+
+            <div class="admin-stat-card">
+              <div class="stat-card-top">
+                <span class="stat-label">DECISION EFFECTIVENESS</span>
+                <span class="stat-icon-pill green">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+              </div>
+              <div class="stat-number mono" id="kpiEffectivenessPct">--%</div>
+              <div class="stat-subtext">Verified post-transit SLA audits</div>
+            </div>
+
+            <div class="admin-stat-card">
+              <div class="stat-card-top">
+                <span class="stat-label">REGISTERED USERS</span>
+                <span class="stat-icon-pill amber">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                </span>
+              </div>
+              <div class="stat-number mono" id="kpiTotalUsers">--</div>
+              <div class="stat-subtext">Active Sessions: <span id="kpiActiveSessions" class="mono font-bold">--</span></div>
+            </div>
+
+            <div class="admin-stat-card">
+              <div class="stat-card-top">
+                <span class="stat-label">DATABASE STORAGE</span>
+                <span class="stat-icon-pill blue">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                </span>
+              </div>
+              <div class="stat-number mono" id="kpiDatabaseSize">-- KB</div>
+              <div class="stat-subtext">supplyprescript.db</div>
+            </div>
+
+          </div>
+
+          <!-- Prescriptive Action Breakdown & Architectural Highlights -->
+          <div class="admin-split-deck">
+            
+            <!-- Mitigation Action Distribution Card -->
+            <div class="admin-deck-card">
+              <div class="deck-card-header">
+                <div>
+                  <h2 class="deck-card-title">Prescribed Mitigation Distribution</h2>
+                  <p class="deck-card-sub">PuLP MILP solver recommendations recorded across shipments</p>
+                </div>
+              </div>
+              <div id="actionDistributionBars" class="action-distribution-list">
+                <div class="empty-state-notice">Loading distribution data...</div>
+              </div>
+            </div>
+
+            <!-- Platform Architecture & Security Posture Card -->
+            <div class="admin-deck-card">
+              <div class="deck-card-header">
+                <div>
+                  <h2 class="deck-card-title">Security &amp; Operational Posture</h2>
+                  <p class="deck-card-sub">Active enterprise safeguards and governance guarantees</p>
+                </div>
+                <span class="posture-shield-badge mono">ENFORCED</span>
+              </div>
+              <div class="posture-items-stack">
+                <div class="posture-row">
+                  <span class="posture-name">Credential Hashing</span>
+                  <span class="posture-value mono">PBKDF2-HMAC-SHA256 (200k iter)</span>
+                </div>
+                <div class="posture-row">
+                  <span class="posture-name">Plaintext Passwords</span>
+                  <span class="posture-value mono secure">Zero Plaintext / Salted</span>
+                </div>
+                <div class="posture-row">
+                  <span class="posture-name">Session Architecture</span>
+                  <span class="posture-value mono">SQLite Server-Side Session Store</span>
+                </div>
+                <div class="posture-row">
+                  <span class="posture-name">Session Lifespan</span>
+                  <span class="posture-value mono">24 Hours (Instant Revocation)</span>
+                </div>
+                <div class="posture-row">
+                  <span class="posture-name">Role-Based Access Control</span>
+                  <span class="posture-value mono">Administrator / Manager / Analyst</span>
+                </div>
+                <div class="posture-row">
+                  <span class="posture-name">Foreign Key Constraints</span>
+                  <span class="posture-value mono">PRAGMA foreign_keys = ON</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ==================================================================
+             SECTION 2: USER & ROLE MANAGEMENT
+             ================================================================== -->
+        <section id="admin-section-users" class="admin-tab-view" aria-labelledby="headingUsers">
+          
+          <div class="view-header-strip">
+            <div>
+              <h1 class="view-headline" id="headingUsers">User &amp; Access Control</h1>
+              <p class="view-subheadline">
+                Provision new team members, manage enterprise roles, and audit login access.
+              </p>
+            </div>
+            <div class="header-action-buttons">
+              <button type="button" class="btn-primary-action" id="btnOpenCreateUserModal">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Provision New User</span>
+              </button>
+              <button type="button" class="btn-refresh-data" id="btnRefreshUsers" title="Refresh user table">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Enterprise Role Hierarchy & Permission Matrix Card -->
+          <div class="role-permission-matrix-card">
+            <div class="matrix-header">
+              <span class="matrix-title">ENTERPRISE ROLE &amp; PRIVILEGE HIERARCHY</span>
+              <span class="matrix-note mono">BACKEND ENFORCED VIA FASTAPI DEPENDENCIES</span>
+            </div>
+            <div class="matrix-grid">
+              
+              <div class="matrix-column">
+                <div class="matrix-role-header">
+                  <span class="role-pill role-admin mono">ADMINISTRATOR</span>
+                  <span class="role-level">Full Authority</span>
+                </div>
+                <ul class="matrix-privileges-list">
+                  <li>&bull; User creation, role assignment &amp; status control</li>
+                  <li>&bull; Access to Admin Console &amp; system diagnostics</li>
+                  <li>&bull; Full decision approval &amp; override rights</li>
+                  <li>&bull; Complete immutable audit trail visibility</li>
+                  <li>&bull; Simulation, ML inspection &amp; optimization solves</li>
+                </ul>
+              </div>
+
+              <div class="matrix-column">
+                <div class="matrix-role-header">
+                  <span class="role-pill role-manager mono">MANAGER</span>
+                  <span class="role-level">Operational Decision Rights</span>
+                </div>
+                <ul class="matrix-privileges-list">
+                  <li>&bull; Mitigation action approvals via <code class="mono">/decision</code></li>
+                  <li>&bull; Execution parameter &amp; capacity overrides</li>
+                  <li>&bull; Full decision console &amp; scenario solves</li>
+                  <li>&bull; Audit trail inspection &amp; outcome review</li>
+                  <li class="restricted-item">&times; Cannot manage users or access Admin Console</li>
+                </ul>
+              </div>
+
+              <div class="matrix-column">
+                <div class="matrix-role-header">
+                  <span class="role-pill role-analyst mono">ANALYST</span>
+                  <span class="role-level">Simulation &amp; View Access</span>
+                </div>
+                <ul class="matrix-privileges-list">
+                  <li>&bull; Pre-transit risk predictions via <code class="mono">/predict</code></li>
+                  <li>&bull; PuLP prescriptive scenario simulations</li>
+                  <li>&bull; Model accuracy &amp; ML metrics evaluation</li>
+                  <li>&bull; Overview dashboard &amp; historical reporting</li>
+                  <li class="restricted-item">&times; Forbidden from approving mitigation decisions</li>
+                </ul>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Users Directory Table -->
+          <div class="admin-table-container">
+            <div class="table-card-header">
+              <div class="table-header-title-box">
+                <h2 class="table-card-title">Corporate User Directory</h2>
+                <span class="table-records-count mono" id="usersTableCount">Loading accounts...</span>
+              </div>
+              <div class="table-search-box">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="inputSearchUsers" placeholder="Filter by username or email..." class="table-search-input">
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-data-table" id="usersTable">
+                <thead>
+                  <tr>
+                    <th class="mono">ID</th>
+                    <th>User &amp; Full Name</th>
+                    <th>Corporate Email</th>
+                    <th>Role</th>
+                    <th>Account Status</th>
+                    <th>Created</th>
+                    <th>Last Active</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                  <tr>
+                    <td colspan="8" class="table-loading-cell">Loading enterprise user accounts from SQLite...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ==================================================================
+             SECTION 3: DECISION AUDIT LEDGER
+             ================================================================== -->
+        <section id="admin-section-audit" class="admin-tab-view" aria-labelledby="headingAudit">
+          
+          <div class="view-header-strip">
+            <div>
+              <h1 class="view-headline" id="headingAudit">Prescriptive Decision Audit Trail</h1>
+              <p class="view-subheadline">
+                Immutable SQLite audit ledger recording ML delay predictions, PuLP optimizations, and manager approvals.
+              </p>
+            </div>
+            <div class="header-action-buttons">
+              <button type="button" class="btn-refresh-data" id="btnRefreshAuditTable">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                <span>Refresh Ledger</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Audit Ledger Table -->
+          <div class="admin-table-container">
+            <div class="table-card-header">
+              <div class="table-header-title-box">
+                <h2 class="table-card-title">Closed-Loop Mitigation Records</h2>
+                <span class="table-records-count mono" id="auditRecordsCount">Loading records...</span>
+              </div>
+              <div class="table-search-box">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="inputSearchAudit" placeholder="Search by shipment ID or action..." class="table-search-input">
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-data-table" id="auditTable">
+                <thead>
+                  <tr>
+                    <th class="mono">Shipment ID</th>
+                    <th>PuLP Recommended Action</th>
+                    <th>Solver Status</th>
+                    <th>Budget Ceiling</th>
+                    <th>Max Days</th>
+                    <th>Manager Approval</th>
+                    <th>Notes / Override</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody id="auditTableBody">
+                  <tr>
+                    <td colspan="8" class="table-loading-cell">Loading optimization audit trail...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ==================================================================
+             SECTION 4: SYSTEM & ML ENGINE DIAGNOSTICS
+             ================================================================== -->
+        <section id="admin-section-diagnostics" class="admin-tab-view" aria-labelledby="headingDiagnostics">
+          
+          <div class="view-header-strip">
+            <div>
+              <h1 class="view-headline" id="headingDiagnostics">Engine Telemetry &amp; System Health</h1>
+              <p class="view-subheadline">
+                Detailed diagnostic health reports for FastAPI backend, XGBoost classifier, PuLP solver, and SQLite storage.
+              </p>
+            </div>
+            <button type="button" class="btn-refresh-data" id="btnRefreshDiagnostics">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              <span>Refresh Diagnostics</span>
+            </button>
+          </div>
+
+          <!-- Diagnostics Grid -->
+          <div class="diagnostics-cards-grid">
+            
+            <!-- Card 1: Machine Learning Classifier -->
+            <div class="diag-card">
+              <div class="diag-card-header">
+                <div class="diag-title-box">
+                  <span class="diag-icon purple">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                  </span>
+                  <h2 class="diag-name">ML Delay Prediction Engine</h2>
+                </div>
+                <span class="diag-status-pill online mono">ACTIVE</span>
+              </div>
+              <div class="diag-body">
+                <p class="diag-desc">
+                  XGBoost gradient-boosted decision tree classifier predicting semiconductor freight delay probability prior to cargo dispatch.
+                </p>
+                <div class="diag-metrics-table">
+                  <div class="diag-row">
+                    <span>Algorithm</span>
+                    <span class="mono">XGBClassifier (Extreme Gradient Boosting)</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Training Corpus</span>
+                    <span class="mono">DataCo Logistics Dataset (180,519 rows)</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Precision</span>
+                    <span class="mono font-bold" id="diagMlPrecision">84.31%</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Accuracy</span>
+                    <span class="mono font-bold" id="diagMlAccuracy">--</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Recall</span>
+                    <span class="mono" id="diagMlRecall">--</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>F1 Score</span>
+                    <span class="mono" id="diagMlF1">--</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: PuLP Prescriptive MILP Solver -->
+            <div class="diag-card">
+              <div class="diag-card-header">
+                <div class="diag-title-box">
+                  <span class="diag-icon blue">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                  </span>
+                  <h2 class="diag-name">PuLP Optimization Engine</h2>
+                </div>
+                <span class="diag-status-pill online mono">ACTIVE</span>
+              </div>
+              <div class="diag-body">
+                <p class="diag-desc">
+                  COIN-OR Branch-and-Cut (CBC) Mixed-Integer Linear Programming solver formulating mathematically optimal mitigation policies.
+                </p>
+                <div class="diag-metrics-table">
+                  <div class="diag-row">
+                    <span>Solver Backend</span>
+                    <span class="mono">COIN-OR CBC (Coin Branch and Cut)</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Formulation</span>
+                    <span class="mono">MILP with Hard SLA &amp; Budget Bounds</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Solve Latency</span>
+                    <span class="mono font-bold">&lt; 50 Milliseconds</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Mitigation Options</span>
+                    <span class="mono">Air Expedite, Secondary Fab, Buffer</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Objective</span>
+                    <span class="mono">Min(Total Cost) s.t. Delivery &le; SLA</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: SQLite Database Layer -->
+            <div class="diag-card">
+              <div class="diag-card-header">
+                <div class="diag-title-box">
+                  <span class="diag-icon cyan">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                  </span>
+                  <h2 class="diag-name">SQLite Persistence Layer</h2>
+                </div>
+                <span class="diag-status-pill online mono">HEALTHY</span>
+              </div>
+              <div class="diag-body">
+                <p class="diag-desc">
+                  Zero-dependency embedded relational store with Foreign Keys, indexed lookups, and atomic ACID audit commits.
+                </p>
+                <div class="diag-metrics-table">
+                  <div class="diag-row">
+                    <span>Database File</span>
+                    <span class="mono" id="diagDbFile">supplyprescript.db</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Size</span>
+                    <span class="mono font-bold" id="diagDbSize">-- KB</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Core Tables</span>
+                    <span class="mono">shipments, predictions, decisions, outcomes</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Security Tables</span>
+                    <span class="mono">users, sessions</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Foreign Keys</span>
+                    <span class="mono secure">PRAGMA foreign_keys = ON</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 4: Access Control & Cryptographic Security -->
+            <div class="diag-card">
+              <div class="diag-card-header">
+                <div class="diag-title-box">
+                  <span class="diag-icon amber">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </span>
+                  <h2 class="diag-name">Authentication &amp; RBAC</h2>
+                </div>
+                <span class="diag-status-pill online mono">ENFORCED</span>
+              </div>
+              <div class="diag-body">
+                <p class="diag-desc">
+                  Cryptographic PBKDF2 password derivation, token bearer headers, HttpOnly cookies, and instant session revocation.
+                </p>
+                <div class="diag-metrics-table">
+                  <div class="diag-row">
+                    <span>Password Hash</span>
+                    <span class="mono">PBKDF2-HMAC-SHA256</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Iteration Count</span>
+                    <span class="mono">200,000 Iterations</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Salt Generation</span>
+                    <span class="mono">Cryptographically Secure Random (secrets)</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Session Storage</span>
+                    <span class="mono">Server-Side SQLite Sessions</span>
+                  </div>
+                  <div class="diag-row">
+                    <span>Revocation Mode</span>
+                    <span class="mono secure">Immediate Session Revocation</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- ======================================================================
+       MODAL: PROVISION NEW ENTERPRISE USER
+       ====================================================================== -->
+  <div id="createUserModal" class="admin-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="admin-modal-card">
+      <div class="modal-card-header">
+        <div>
+          <h2 class="modal-card-title" id="modalTitle">Provision Enterprise Account</h2>
+          <p class="modal-card-sub">Create a new corporate account with assigned enterprise permissions.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="btnCloseCreateUserModal" aria-label="Close modal">&times;</button>
+      </div>
+
+      <!-- Modal Error Alert -->
+      <div id="modalAlert" class="auth-alert-banner hidden">
+        <div class="alert-text-content">
+          <span id="modalAlertMessage" class="alert-message">Error message</span>
+        </div>
+      </div>
+
+      <form id="createUserForm" class="modal-form" novalidate>
+        
+        <div class="form-field-group">
+          <label for="newUsername" class="field-label">Corporate Username <span class="required-indicator">*</span></label>
+          <input type="text" id="newUsername" class="field-input" placeholder="e.g. jsmith or ops.manager" required autocomplete="off">
+        </div>
+
+        <div class="form-field-group">
+          <label for="newEmail" class="field-label">Corporate Email <span class="required-indicator">*</span></label>
+          <input type="email" id="newEmail" class="field-input" placeholder="e.g. jsmith@supplyprescript.corp" required autocomplete="off">
+        </div>
+
+        <div class="form-field-group">
+          <label for="newFullName" class="field-label">Display Full Name</label>
+          <input type="text" id="newFullName" class="field-input" placeholder="e.g. John Smith">
+        </div>
+
+        <div class="form-field-group">
+          <label for="newRole" class="field-label">Assigned Role <span class="required-indicator">*</span></label>
+          <select id="newRole" class="field-select" required>
+            <option value="analyst">Logistics Analyst (Simulations, ML Metrics, Overview)</option>
+            <option value="manager">Supply Chain Manager (Decision Approvals, Overrides)</option>
+            <option value="admin">Executive Administrator (Full System & User Control)</option>
+          </select>
+        </div>
+
+        <div class="form-field-group">
+          <label for="newPassword" class="field-label">Account Password <span class="required-indicator">*</span></label>
+          <input type="password" id="newPassword" class="field-input" placeholder="Minimum 6 characters" required autocomplete="new-password">
+          <span class="field-annotation mono">Hashed using PBKDF2-HMAC-SHA256 with 200,000 iterations</span>
+        </div>
+
+        <div class="modal-actions-row">
+          <button type="button" class="btn-modal-cancel" id="btnCancelCreateUser">Cancel</button>
+          <button type="submit" class="btn-modal-submit" id="btnSubmitNewUser">
+            <span id="btnSubmitNewUserText">Provision Account</span>
+            <span id="newUserSpinner" class="spinner-inline hidden" aria-hidden="true"></span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       ADMIN CONSOLE JAVASCRIPT CONTROLLER
+       ====================================================================== -->
+  <script>
+    function resolveApiBase() {
+      if (window.location.protocol === 'file:' || !window.location.origin.startsWith('http')) {
+        return 'http://127.0.0.1:8000';
+      }
+      if (window.location.port === '8000' || window.location.port === '') {
+        return window.location.origin;
+      }
+      return `${window.location.protocol}//${window.location.hostname}:8000`;
+    }
+
+    const API_BASE = resolveApiBase();
+
+    let currentAdminUser = null;
+    let allUsersCache = [];
+    let allDecisionsCache = [];
+
+    function getAuthHeaders(extra = {}) {
+      const token = localStorage.getItem('supplyprescript_token');
+      const headers = { ...extra };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      return headers;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      verifyAdminAccessAndInit();
+      initAdminNavigation();
+      initSignOutButtons();
+      initCreateUserModal();
+      initSearchFilters();
+      initRefreshButtons();
+    });
+
+    // 1. Backend Verification & Security Guard
+    async function verifyAdminAccessAndInit() {
+      // Capture any OAuth token returned in URL hash fragment
+      if (window.location.hash && window.location.hash.includes('token=')) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const token = hashParams.get('token');
+        if (token) {
+          localStorage.setItem('supplyprescript_token', token);
+          history.replaceState(null, document.title, window.location.pathname + window.location.search);
+        }
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/me`, {
+          credentials: 'include',
+          headers: getAuthHeaders()
+        });
+
+        if (!res.ok) {
+          throw new Error('Unauthenticated');
+        }
+
+        const user = await res.json();
+        if (user.role !== 'admin') {
+          // Strictly forbid non-admin users
+          showToast(`Access Denied: Administrator role required. Your role is '${user.role}'.`, 'error');
+          setTimeout(() => {
+            window.location.href = (user.role === 'manager') ? '/dashboard?tab=console' : '/dashboard?tab=home';
+          }, 1200);
+          return;
+        }
+
+        currentAdminUser = user;
+        renderAdminProfile(user);
+
+        // Load all data
+        loadDashboardAnalytics();
+        loadUsersTable();
+        loadAuditTable();
+        loadSystemDiagnostics();
+
+      } catch (err) {
+        localStorage.removeItem('supplyprescript_token');
+        localStorage.removeItem('supplyprescript_user');
+        window.location.href = '/login?redirect=/admin';
+      }
+    }
+
+    function renderAdminProfile(user) {
+      const avatar = document.getElementById('adminUserAvatar');
+      const name = document.getElementById('adminUserFullName');
+
+      if (avatar) {
+        const initials = (user.username || 'AD').substring(0, 2).toUpperCase();
+        avatar.textContent = initials;
+      }
+      if (name) {
+        name.textContent = user.full_name || user.username;
+      }
+    }
+
+    // 2. Navigation Tabs
+    function initAdminNavigation() {
+      const navButtons = document.querySelectorAll('.admin-nav-item[data-target]');
+      const titleLabel = document.getElementById('topbarCurrentSectionTitle');
+
+      const titles = {
+        'admin-section-stats': 'DASHBOARD OVERVIEW',
+        'admin-section-users': 'USER & ROLE MANAGEMENT',
+        'admin-section-audit': 'DECISION AUDIT TRAIL',
+        'admin-section-diagnostics': 'SYSTEM & ML DIAGNOSTICS'
+      };
+
+      navButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.getAttribute('data-target');
+          if (!targetId) return;
+
+          // Sync active nav item
+          navButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          // Switch tab view
+          document.querySelectorAll('.admin-tab-view').forEach(view => {
+            if (view.id === targetId) {
+              view.classList.add('active');
+            } else {
+              view.classList.remove('active');
+            }
+          });
+
+          if (titleLabel && titles[targetId]) {
+            titleLabel.textContent = titles[targetId];
+          }
+
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+    }
+
+    // 3. Load Overview Analytics from Real SQLite Data
+    async function loadDashboardAnalytics() {
+      try {
+        const res = await fetch(`${API_BASE}/analytics`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error('Failed to load analytics');
+        const data = await res.json();
+
+        document.getElementById('kpiTotalShipments').textContent = Number(data.total_shipments_tracked || 0).toLocaleString();
+        document.getElementById('kpiTotalPredictions').textContent = Number(data.total_predictions_made || 0).toLocaleString();
+        document.getElementById('kpiAvgRisk').textContent = `${((data.average_delay_probability || 0) * 100).toFixed(1)}%`;
+        document.getElementById('kpiTotalDecisions').textContent = Number(data.optimal_solutions_found || 0).toLocaleString();
+        document.getElementById('kpiOptimalRatio').textContent = `${data.optimal_solutions_found || 0} Solved`;
+        document.getElementById('kpiEffectivenessPct').textContent = `${data.decision_effectiveness_pct || 0}%`;
+
+        // Render Action Distribution bars
+        renderActionDistribution(data.action_distribution || {});
+
+      } catch (err) {
+        showToast('Failed to load telemetry analytics from SQLite.', 'error');
+      }
+    }
+
+    function renderActionDistribution(distribution) {
+      const container = document.getElementById('actionDistributionBars');
+      if (!container) return;
+
+      const keys = Object.keys(distribution);
+      if (keys.length === 0) {
+        container.innerHTML = '<div class="empty-state-notice">No optimization decisions recorded in audit ledger yet.</div>';
+        return;
+      }
+
+      let total = 0;
+      keys.forEach(k => total += distribution[k]);
+
+      let html = '';
+      keys.forEach(action => {
+        const count = distribution[action];
+        const pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+        html += `
+          <div class="distribution-row">
+            <div class="dist-meta">
+              <span class="dist-name">${escapeHtml(action)}</span>
+              <span class="dist-count mono">${count} (${pct}%)</span>
+            </div>
+            <div class="dist-track">
+              <div class="dist-fill" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // 4. Load User Directory & Access Management
+    async function loadUsersTable() {
+      const tbody = document.getElementById('usersTableBody');
+      const countBadge = document.getElementById('sidebarUserCountBadge');
+      const countLabel = document.getElementById('usersTableCount');
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/users`, {
+          credentials: 'include',
+          headers: getAuthHeaders()
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const users = await res.json();
+        allUsersCache = users;
+
+        if (countBadge) countBadge.textContent = users.length;
+        if (countLabel) countLabel.textContent = `${users.length} registered accounts`;
+        document.getElementById('kpiTotalUsers').textContent = users.length;
+
+        renderUsersRows(users);
+
+      } catch (err) {
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="8" class="table-error-cell">Failed to load users: ${escapeHtml(err.message)}</td></tr>`;
+        }
+      }
+    }
+
+    function renderUsersRows(users) {
+      const tbody = document.getElementById('usersTableBody');
+      if (!tbody) return;
+
+      if (!users || users.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="table-empty-cell">No users found in directory.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = users.map(user => {
+        const roleUpper = (user.role || 'analyst').toUpperCase();
+        const roleClass = `role-${(user.role || 'analyst').toLowerCase()}`;
+        const isActive = user.is_active === 1 || user.is_active === true;
+        const isSelf = currentAdminUser && currentAdminUser.id === user.id;
+        const isRootAdmin = user.username === 'admin';
+
+        const statusPill = isActive
+          ? `<span class="status-pill-active"><span class="dot-active"></span>Active</span>`
+          : `<span class="status-pill-inactive"><span class="dot-inactive"></span>Deactivated</span>`;
+
+        const lastActive = user.last_login 
+          ? formatTimestamp(user.last_login)
+          : '<span class="text-muted mono">Never</span>';
+
+        const createdAt = user.created_at ? formatTimestamp(user.created_at) : 'System Seed';
+
+        // Action Buttons
+        let actionButtons = '';
+        if (isRootAdmin) {
+          actionButtons = `<span class="system-root-tag mono">PROTECTED ROOT</span>`;
+        } else if (isSelf) {
+          actionButtons = `<span class="current-user-tag mono">CURRENT USER</span>`;
+        } else {
+          const toggleAction = isActive ? 'Deactivate' : 'Reactivate';
+          const toggleClass = isActive ? 'btn-action-deactivate' : 'btn-action-activate';
+          const newStatus = !isActive;
+
+          actionButtons = `
+            <div class="actions-group">
+              <button type="button" class="btn-table-action ${toggleClass}" onclick="toggleUserStatus(${user.id}, ${newStatus}, '${escapeHtml(user.username)}')">
+                ${toggleAction}
+              </button>
+              <button type="button" class="btn-table-action btn-action-delete" onclick="deleteUserAccount(${user.id}, '${escapeHtml(user.username)}')">
+                Delete
+              </button>
+            </div>
+          `;
+        }
+
+        return `
+          <tr>
+            <td class="mono font-bold">#${user.id}</td>
+            <td>
+              <div class="user-cell-wrap">
+                <span class="user-cell-name">${escapeHtml(user.full_name || user.username)}</span>
+                <span class="user-cell-uname mono">@${escapeHtml(user.username)}</span>
+              </div>
+            </td>
+            <td class="mono">${escapeHtml(user.email)}</td>
+            <td><span class="role-pill ${roleClass} mono">${roleUpper}</span></td>
+            <td>${statusPill}</td>
+            <td class="mono font-sm">${createdAt}</td>
+            <td class="mono font-sm">${lastActive}</td>
+            <td class="text-right">${actionButtons}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Toggle User Status (Admin Only)
+    window.toggleUserStatus = async function(userId, newStatus, username) {
+      const actionName = newStatus ? 'reactivate' : 'deactivate';
+      if (!confirm(`Are you sure you want to ${actionName} account '@${username}'?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/users/${userId}/status`, {
+          method: 'PATCH',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ is_active: newStatus })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || data.message || 'Status update failed.');
+        }
+
+        showToast(`User '@${username}' successfully ${newStatus ? 'reactivated' : 'deactivated'}.`, 'success');
+        loadUsersTable();
+        loadSystemDiagnostics();
+
+      } catch (err) {
+        showToast(`Action failed: ${err.message}`, 'error');
+      }
+    };
+
+    // Delete User Account (Admin Only)
+    window.deleteUserAccount = async function(userId, username) {
+      if (!confirm(`CAUTION: Permanently delete account '@${username}'? This will revoke all sessions and cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/users/${userId}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || data.message || 'Failed to delete user.');
+        }
+
+        showToast(`User '@${username}' was permanently deleted.`, 'success');
+        loadUsersTable();
+        loadSystemDiagnostics();
+
+      } catch (err) {
+        showToast(`Deletion failed: ${err.message}`, 'error');
+      }
+    };
+
+    // 5. Decision Audit Ledger
+    async function loadAuditTable() {
+      const tbody = document.getElementById('auditTableBody');
+      const countLabel = document.getElementById('auditRecordsCount');
+
+      try {
+        const res = await fetch(`${API_BASE}/history/decisions`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const decisions = await res.json();
+        allDecisionsCache = decisions;
+
+        if (countLabel) countLabel.textContent = `${decisions.length} audit records`;
+        renderAuditRows(decisions);
+
+      } catch (err) {
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="8" class="table-error-cell">Failed to load decisions: ${escapeHtml(err.message)}</td></tr>`;
+        }
+      }
+    }
+
+    function renderAuditRows(decisions) {
+      const tbody = document.getElementById('auditTableBody');
+      if (!tbody) return;
+
+      if (!decisions || decisions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="table-empty-cell">No optimization decisions found in audit ledger.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = decisions.map(d => {
+        const isOptimal = (d.optimization_status || '').toLowerCase() === 'optimal';
+        const statusBadge = isOptimal
+          ? `<span class="audit-status-badge optimal mono">OPTIMAL</span>`
+          : `<span class="audit-status-badge warning mono">${escapeHtml(d.optimization_status || 'UNKNOWN')}</span>`;
+
+        const managerDec = d.manager_decision 
+          ? `<span class="manager-dec-badge mono">${escapeHtml(d.manager_decision)}</span>`
+          : `<span class="text-muted mono">Pending</span>`;
+
+        return `
+          <tr>
+            <td class="mono font-bold accent">${escapeHtml(d.shipment_id || '--')}</td>
+            <td><strong>${escapeHtml(d.recommended_action || 'None')}</strong></td>
+            <td>${statusBadge}</td>
+            <td class="mono">$${Number(d.budget || 0).toLocaleString()}</td>
+            <td class="mono">${d.max_delivery_days || '--'} Days</td>
+            <td>${managerDec}</td>
+            <td class="font-sm">${escapeHtml(d.notes || '--')}</td>
+            <td class="mono font-sm">${formatTimestamp(d.created_at)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 6. System & ML Diagnostics
+    async function loadSystemDiagnostics() {
+      try {
+        const res = await fetch(`${API_BASE}/admin/system-status`, {
+          credentials: 'include',
+          headers: getAuthHeaders()
+        });
+
+        if (!res.ok) throw new Error('Failed to load system diagnostics');
+        const sys = await res.json();
+
+        // Database
+        if (sys.database) {
+          document.getElementById('diagDbFile').textContent = sys.database.database_file || 'supplyprescript.db';
+          document.getElementById('diagDbSize').textContent = `${sys.database.database_size_kb || 0} KB`;
+          document.getElementById('kpiDatabaseSize').textContent = `${sys.database.database_size_kb || 0} KB`;
+          document.getElementById('kpiActiveSessions').textContent = `${sys.database.active_sessions_count || 0}`;
+        }
+
+        // ML Metrics
+        if (sys.ml_engine && sys.ml_engine.metrics) {
+          const m = sys.ml_engine.metrics;
+          if (m.accuracy) document.getElementById('diagMlAccuracy').textContent = `${(m.accuracy * 100).toFixed(2)}%`;
+          if (m.precision) {
+            document.getElementById('diagMlPrecision').textContent = `${(m.precision * 100).toFixed(2)}%`;
+          }
+          if (m.recall) document.getElementById('diagMlRecall').textContent = `${(m.recall * 100).toFixed(2)}%`;
+          if (m.f1_score) document.getElementById('diagMlF1').textContent = `${(m.f1_score * 100).toFixed(2)}%`;
+        }
+
+      } catch (err) {
+        // Fallback gracefully
+      }
+    }
+
+    // 7. Modal: Create User
+    function initCreateUserModal() {
+      const modal = document.getElementById('createUserModal');
+      const openBtn = document.getElementById('btnOpenCreateUserModal');
+      const closeBtn = document.getElementById('btnCloseCreateUserModal');
+      const cancelBtn = document.getElementById('btnCancelCreateUser');
+      const form = document.getElementById('createUserForm');
+
+      if (!modal) return;
+
+      const openModal = () => {
+        modal.classList.remove('hidden');
+        document.getElementById('newUsername').focus();
+        hideModalAlert();
+      };
+
+      const closeModal = () => {
+        modal.classList.add('hidden');
+        form.reset();
+        hideModalAlert();
+      };
+
+      if (openBtn) openBtn.addEventListener('click', openModal);
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+      // Close on backdrop click
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+
+      // Submit Form
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          hideModalAlert();
+
+          const username = document.getElementById('newUsername').value.trim();
+          const email = document.getElementById('newEmail').value.trim();
+          const fullName = document.getElementById('newFullName').value.trim();
+          const role = document.getElementById('newRole').value;
+          const password = document.getElementById('newPassword').value;
+
+          if (!username || !email || !password) {
+            showModalAlert('Please fill in all required fields.');
+            return;
+          }
+
+          if (password.length < 6) {
+            showModalAlert('Password must be at least 6 characters.');
+            return;
+          }
+
+          const submitBtn = document.getElementById('btnSubmitNewUser');
+          const submitText = document.getElementById('btnSubmitNewUserText');
+          const spinner = document.getElementById('newUserSpinner');
+
+          submitBtn.disabled = true;
+          submitText.textContent = 'Provisioning...';
+          spinner.classList.remove('hidden');
+
+          try {
+            const res = await fetch(`${API_BASE}/auth/users`, {
+              method: 'POST',
+              headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+              body: JSON.stringify({
+                username: username,
+                email: email,
+                full_name: fullName || null,
+                role: role,
+                password: password
+              })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+              throw new Error(data.detail || data.message || 'Failed to create user account.');
+            }
+
+            closeModal();
+            showToast(`User '@${username}' provisioned successfully with role '${role}'.`, 'success');
+            loadUsersTable();
+            loadSystemDiagnostics();
+
+          } catch (err) {
+            showModalAlert(err.message);
+          } finally {
+            submitBtn.disabled = false;
+            submitText.textContent = 'Provision Account';
+            spinner.classList.add('hidden');
+          }
+        });
+      }
+    }
+
+    function showModalAlert(msg) {
+      const alertBox = document.getElementById('modalAlert');
+      const text = document.getElementById('modalAlertMessage');
+      if (alertBox && text) {
+        text.textContent = msg;
+        alertBox.classList.remove('hidden');
+      }
+    }
+
+    function hideModalAlert() {
+      const alertBox = document.getElementById('modalAlert');
+      if (alertBox) alertBox.classList.add('hidden');
+    }
+
+    // 8. Search / Filtering
+    function initSearchFilters() {
+      // User Filter
+      const userSearch = document.getElementById('inputSearchUsers');
+      if (userSearch) {
+        userSearch.addEventListener('input', () => {
+          const q = userSearch.value.trim().toLowerCase();
+          const filtered = allUsersCache.filter(u => 
+            (u.username && u.username.toLowerCase().includes(q)) ||
+            (u.email && u.email.toLowerCase().includes(q)) ||
+            (u.full_name && u.full_name.toLowerCase().includes(q)) ||
+            (u.role && u.role.toLowerCase().includes(q))
+          );
+          renderUsersRows(filtered);
+        });
+      }
+
+      // Audit Filter
+      const auditSearch = document.getElementById('inputSearchAudit');
+      if (auditSearch) {
+        auditSearch.addEventListener('input', () => {
+          const q = auditSearch.value.trim().toLowerCase();
+          const filtered = allDecisionsCache.filter(d =>
+            (d.shipment_id && d.shipment_id.toLowerCase().includes(q)) ||
+            (d.recommended_action && d.recommended_action.toLowerCase().includes(q)) ||
+            (d.manager_decision && d.manager_decision.toLowerCase().includes(q)) ||
+            (d.optimization_status && d.optimization_status.toLowerCase().includes(q))
+          );
+          renderAuditRows(filtered);
+        });
+      }
+    }
+
+    // 9. Refresh Buttons
+    function initRefreshButtons() {
+      const rStats = document.getElementById('btnRefreshAnalytics');
+      if (rStats) rStats.addEventListener('click', () => {
+        loadDashboardAnalytics();
+        showToast('Refreshed operational statistics.', 'success');
+      });
+
+      const rUsers = document.getElementById('btnRefreshUsers');
+      if (rUsers) rUsers.addEventListener('click', () => {
+        loadUsersTable();
+        showToast('Refreshed user directory.', 'success');
+      });
+
+      const rAudit = document.getElementById('btnRefreshAuditTable');
+      if (rAudit) rAudit.addEventListener('click', () => {
+        loadAuditTable();
+        showToast('Refreshed decision audit trail.', 'success');
+      });
+
+      const rDiag = document.getElementById('btnRefreshDiagnostics');
+      if (rDiag) rDiag.addEventListener('click', () => {
+        loadSystemDiagnostics();
+        showToast('Refreshed system diagnostics.', 'success');
+      });
+
+      const dismissAlert = document.getElementById('btnDismissAdminAlert');
+      if (dismissAlert) {
+        dismissAlert.addEventListener('click', () => {
+          document.getElementById('adminGlobalAlert').classList.add('hidden');
+        });
+      }
+    }
+
+    // 10. Sign Out Handlers
+    function initSignOutButtons() {
+      const signoutHandler = async () => {
+        try {
+          await fetch(`${API_BASE}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: getAuthHeaders()
+          });
+        } catch (_) {}
+        localStorage.removeItem('supplyprescript_token');
+        localStorage.removeItem('supplyprescript_user');
+        window.location.href = '/login';
+      };
+
+      const topBtn = document.getElementById('btnTopbarSignOut');
+      const sideBtn = document.getElementById('btnSidebarSignOut');
+      if (topBtn) topBtn.addEventListener('click', signoutHandler);
+      if (sideBtn) sideBtn.addEventListener('click', signoutHandler);
+    }
+
+    // Toast Alert Helper
+    function showToast(message, type = 'info') {
+      const banner = document.getElementById('adminGlobalAlert');
+      const text = document.getElementById('adminAlertMessage');
+      const icon = document.getElementById('adminAlertIcon');
+
+      if (!banner || !text) return;
+
+      text.textContent = message;
+      banner.className = `admin-alert-banner ${type}`;
+      banner.classList.remove('hidden');
+
+      setTimeout(() => {
+        banner.classList.add('hidden');
+      }, 5000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatTimestamp(ts) {
+      if (!ts) return '--';
+      try {
+        const d = new Date(ts);
+        if (isNaN(d.getTime())) return ts;
+        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } catch (_) {
+        return ts;
+      }
+    }
+  </script>
+
+</body>
+</html>

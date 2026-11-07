@@ -57,9 +57,32 @@ def ensure_server_running():
             break
     return server
 
-def request_json(path, method="GET", data=None):
+AUTH_TOKEN = None
+
+
+def get_auth_token():
+    global AUTH_TOKEN
+    if AUTH_TOKEN:
+        return AUTH_TOKEN
+    url = f"{BASE_URL}/auth/login"
+    body = json.dumps({"username_or_email": "manager", "password": "Manager@123"}).encode("utf-8")
+    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            AUTH_TOKEN = data.get("token")
+    except Exception:
+        pass
+    return AUTH_TOKEN
+
+
+def request_json(path, method="GET", data=None, auth=True):
     url = f"{BASE_URL}{path}"
     headers = {"Content-Type": "application/json"} if data else {}
+    if auth:
+        token = get_auth_token()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
     body = json.dumps(data).encode("utf-8") if data else None
     req = urllib.request.Request(url, data=body, headers=headers, method=method)
     try:

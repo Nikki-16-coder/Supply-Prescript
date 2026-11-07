@@ -43,6 +43,9 @@
         <button type="button" class="nav-item tab-btn" data-tab="tab-about" id="tabAboutBtn">
           <span>About</span>
         </button>
+        <a href="/admin" class="nav-item nav-admin-link hidden" id="navAdminPortalBtn" title="Executive Administrator Console">
+          <span>Admin Console</span>
+        </a>
       </nav>
 
       <!-- Right Header Actions -->
@@ -61,6 +64,25 @@
             <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
         </button>
+
+        <!-- Authenticated User Profile & Sign Out -->
+        <div id="userHeaderProfile" class="user-header-profile">
+          <div class="user-identity">
+            <div id="userAvatarBadge" class="user-avatar-badge mono">--</div>
+            <div class="user-text-info">
+              <span id="userDisplayName" class="user-display-name">Loading...</span>
+              <span id="userRoleBadge" class="user-role-pill role-admin mono">ROLE</span>
+            </div>
+          </div>
+          <button type="button" id="btnHeaderSignOut" class="btn-signout" title="Sign out of SupplyPrescript">
+            <span>Sign Out</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
       </div>
 
     </div>
